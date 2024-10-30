@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import uproot as up
 import tkinter as tk
+import awkward as ak
 import os
 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -12,10 +13,10 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 
 experiment = 'SK' # 'SK' or 'HK' or 'WCTE'
 
-path2events = '../Data/' + experiment + '/'
+path2events = '../WCSim2ML/Data/' + experiment + '/'
 events_file = '10_mu-_200MeV_GPS.root'
 
-events_to_display ='all' # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
+events_to_display = 8 # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
 
 
 
@@ -51,7 +52,7 @@ def compute_PMT_marker_size(PMT_radius, fig, ax) : # compute the size of PMT sca
 
 # Deal with data =======================================================================================
 
-def project2d(x, y, z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder (very ugly please Erwan do not look at this... I think it's Thomas' code anyway)
+def project2d_slow(x, y, z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder (very ugly please Erwan do not look at this... I think it's Thomas' code anyway)
 
   cylinder_radius = detector_geom[experiment]['cylinder_radius']
   zMax = detector_geom[experiment]['height']/2
@@ -97,6 +98,45 @@ def project2d(x, y, z, detector_geom, experiment) : # project 3D PMT positions o
 
 
 
+def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder
+
+  cylinder_radius = detector_geom[experiment]['cylinder_radius']
+  zMax = detector_geom[experiment]['height']/2
+  zMin = -detector_geom[experiment]['height']/2
+
+  Xproj = ak.zeros_like(X)
+  Yproj = ak.zeros_like(Y)
+
+  if experiment == 'WCTE' : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
+    
+    # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
+    eps_top = 60
+    eps_bottom = 50
+
+  else :
+    eps_top = 0.01
+    eps_bottom = 0.01
+
+  top_cap_mask = Z > zMax - eps_top
+  bottom_cap_mask = Z < zMin + eps_bottom
+  cylinder_mask = np.logical_not(top_cap_mask | bottom_cap_mask)
+
+  # cylinder 
+  Xproj = ak.where(cylinder_mask, cylinder_radius * (np.arctan2(Y, X) - np.pi), Xproj)
+  Yproj = ak.where(cylinder_mask, Z, Yproj)
+
+  # top cap
+  Xproj = ak.where(top_cap_mask, - Y, Xproj)
+  Yproj = ak.where(top_cap_mask, X + zMax + cylinder_radius, Yproj)
+
+  # bottom cap
+  Xproj = ak.where(bottom_cap_mask, - Y, Xproj)
+  Yproj = ak.where(bottom_cap_mask, - X + zMin - cylinder_radius, Yproj)
+
+  return Xproj, Yproj
+
+
+
 def events_index_bounds(events_to_display, n_events) : # get the bounds of the events to display
 
   if events_to_display == 'all' : # display all events
@@ -130,9 +170,8 @@ def events_index_bounds(events_to_display, n_events) : # get the bounds of the e
 
   return event_start, event_end
 
-    
 
-def load_data(path2events, events_file, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
+def load_data_slow(path2events, events_file, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
 
     print('Loading data...')
     file = up.open(path2events + events_file)
@@ -150,7 +189,6 @@ def load_data(path2events, events_file, detector_geom, experiment, events_to_dis
 
     events_dic = {'xproj': [], 'yproj': [], 'charge': [], 'time': []} # python dictionary to store data
 
-    
     print('2D projection...')
 
     for event_index in range(event_start, event_end) :
@@ -167,11 +205,41 @@ def load_data(path2events, events_file, detector_geom, experiment, events_to_dis
         hitR = Rz@Rx@np.array([hitx[event_index], hity[event_index], hitz[event_index]])
         hitx[event_index], hity[event_index], hitz[event_index] = hitR[0], hitR[1], hitR[2]
 
-      x2D, y2D = project2d(hitx[event_index], hity[event_index], hitz[event_index], detector_geom, experiment) 
+      x2D, y2D = project2d_slow(hitx[event_index], hity[event_index], hitz[event_index], detector_geom, experiment) 
       events_dic['xproj'].append(x2D)
       events_dic['yproj'].append(y2D)
       events_dic['charge'].append(charge[event_index])
       events_dic['time'].append(time[event_index])
+
+    return events_dic, n_events
+    
+
+def load_data(path2events, events_file, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
+
+    print('Loading data...')
+    file = up.open(path2events + events_file)
+    events_root = file['root_event'] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
+
+    n_events = len(events_root['hitx'].array()) # number of events
+
+    hitx = events_root['hitx'].array()
+    hity = events_root['hity'].array()
+    hitz = events_root['hitz'].array()
+    charge = events_root['charge'].array()
+    time = events_root['time'].array()
+
+    event_start, event_end = events_index_bounds(events_to_display, n_events)
+
+    events_dic = {'xproj': ak.zeros_like(hitx), 'yproj': ak.zeros_like(hity), 'charge': ak.zeros_like(charge), 'time': ak.zeros_like(hitx)} # python dictionary to store data
+
+    
+    print('2D projection...')
+
+    Xproj, Yproj = project2d(hitx[event_start:event_end], hity[event_start:event_end], hitz[event_start:event_end], detector_geom, experiment)
+    events_dic['xproj'] = Xproj
+    events_dic['yproj'] = Yproj
+    events_dic['charge'] = charge[event_start:event_end]
+    events_dic['time'] = time[event_start:event_end]
 
     return events_dic, n_events
 
