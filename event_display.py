@@ -11,12 +11,12 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 
 # Access events root file ==================================================================
 
-experiment = 'SK' # 'SK' or 'HK' or 'WCTE'
+experiment = 'WCTE' # 'SK' or 'HK' or 'WCTE'
 
 path2events = '../WCSim2ML/Data/' + experiment + '/'
-events_file = '10_mu-_200MeV_GPS.root'
+events_file = 'WCTE_Nu16cShort_SO_mu_200_1kMeV_10kevents.root'#'10_mu-_200MeV_GPS.root'
 
-events_to_display = 8 # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
+events_to_display = (0,1000) # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
 
 
 
