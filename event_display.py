@@ -7,7 +7,7 @@ import os
 
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
-#os.environ["XDG_SESSION_TYPE"] = "xcb"
+os.environ["XDG_SESSION_TYPE"] = "xcb"
 
 # Access events root file ==================================================================
 
@@ -16,7 +16,7 @@ experiment = 'WCTE' # 'SK' or 'HK' or 'WCTE'
 path2events = '../WCSim2ML/Data/' + experiment + '/'
 events_file = 'WCTE_Nu16cShort_SO_mu_200_1kMeV_10kevents.root'#'10_mu-_200MeV_GPS.root'
 
-events_to_display = (0,1000) # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
+events_to_display = (0, 1000) # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
 
 
 
@@ -25,7 +25,7 @@ events_to_display = (0,1000) # 'all' to display all events, or tuple (event_star
 detector_geom = {'SK': {'height': 3620.0, 'cylinder_radius': 3368.15/2, 'PMT_radius': 25.4}, 'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0}}
 
 
-# Useful plot functions =======================================================================================
+# Utility functions =======================================================================================
 
 def rescale_color(x) : # rescale colors with sigmoid to have better color range
   if len(x) > 1 :
@@ -48,93 +48,6 @@ def compute_PMT_marker_size(PMT_radius, fig, ax) : # compute the size of PMT sca
     sizes_in_points2 = (PMT_radius * avg_points_per_data_unit) ** 2
 
     return sizes_in_points2
-
-
-# Deal with data =======================================================================================
-
-def project2d_slow(x, y, z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder (very ugly please Erwan do not look at this... I think it's Thomas' code anyway)
-
-  cylinder_radius = detector_geom[experiment]['cylinder_radius']
-  zMax = detector_geom[experiment]['height']/2
-  zMin = -detector_geom[experiment]['height']/2
-
-  N = len(x)
-  xproj = []
-  yproj = []
-
-  if experiment == 'WCTE' : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
-    
-    # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
-    eps_top = 60
-    eps_bottom = 50
-
-  else :
-    eps_top = 0.01
-    eps_bottom = 0.01
-
-  for i in range(N) :
-
-    if z[i] < zMax - eps_top and z[i] > zMin + eps_bottom : # cylinder
-      
-      azimuth = np.arctan2(y[i], x[i])
-      
-      if azimuth < 0:
-        azimuth = 2 * np.pi + azimuth
-
-      xproj.append(cylinder_radius * (azimuth - np.pi))
-      yproj.append(z[i])
-
-    elif z[i] > zMax - eps_top : # top cap
-      
-      xproj.append(- y[i])
-      yproj.append(x[i] + zMax + cylinder_radius)
-   
-    else : # bottom cap
-      
-      xproj.append(- y[i])
-      yproj.append(- x[i] + zMin - cylinder_radius)
-
-  return np.array(xproj),np.array(yproj)
-
-
-
-def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder
-
-  cylinder_radius = detector_geom[experiment]['cylinder_radius']
-  zMax = detector_geom[experiment]['height']/2
-  zMin = -detector_geom[experiment]['height']/2
-
-  Xproj = ak.zeros_like(X)
-  Yproj = ak.zeros_like(Y)
-
-  if experiment == 'WCTE' : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
-    
-    # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
-    eps_top = 60
-    eps_bottom = 50
-
-  else :
-    eps_top = 0.01
-    eps_bottom = 0.01
-
-  top_cap_mask = Z > zMax - eps_top
-  bottom_cap_mask = Z < zMin + eps_bottom
-  cylinder_mask = np.logical_not(top_cap_mask | bottom_cap_mask)
-
-  # cylinder 
-  Xproj = ak.where(cylinder_mask, cylinder_radius * (np.arctan2(Y, X) - np.pi), Xproj)
-  Yproj = ak.where(cylinder_mask, Z, Yproj)
-
-  # top cap
-  Xproj = ak.where(top_cap_mask, - Y, Xproj)
-  Yproj = ak.where(top_cap_mask, X + zMax + cylinder_radius, Yproj)
-
-  # bottom cap
-  Xproj = ak.where(bottom_cap_mask, - Y, Xproj)
-  Yproj = ak.where(bottom_cap_mask, - X + zMin - cylinder_radius, Yproj)
-
-  return Xproj, Yproj
-
 
 
 def events_index_bounds(events_to_display, n_events) : # get the bounds of the events to display
@@ -171,48 +84,65 @@ def events_index_bounds(events_to_display, n_events) : # get the bounds of the e
   return event_start, event_end
 
 
-def load_data_slow(path2events, events_file, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
+# Deal with data =======================================================================================
 
-    print('Loading data...')
-    file = up.open(path2events + events_file)
-    events_root = file['root_event'] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
 
-    n_events = len(events_root['hitx'].array()) # number of events
+def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder
 
-    hitx = events_root['hitx'].array(library='np')
-    hity = events_root['hity'].array(library='np')
-    hitz = events_root['hitz'].array(library='np')
-    charge = events_root['charge'].array(library='np')
-    time = events_root['time'].array(library='np')
+  cylinder_radius = detector_geom[experiment]['cylinder_radius']
+  zMax = detector_geom[experiment]['height']/2
+  zMin = -detector_geom[experiment]['height']/2
 
-    event_start, event_end = events_index_bounds(events_to_display, n_events)
+  Xproj = ak.zeros_like(X)
+  Yproj = ak.zeros_like(Y)
 
-    events_dic = {'xproj': [], 'yproj': [], 'charge': [], 'time': []} # python dictionary to store data
-
-    print('2D projection...')
-
-    for event_index in range(event_start, event_end) :
-
-      if experiment == 'WCTE' : # WCTE is rotated in WCSim to have beam on the z axis, rotate it back to have cylinder axis on z axis like SK and HK, then rotate a tiny bit around z axis so as not to cut a column of PMTs in half (but also rotate the top and bottom caps though...)
-      
-        if event_index == 0 : print('Rotating WCTE events...')
-
-        thetax = np.pi/2
-        Rx = np.array([[1, 0, 0], [0, np.cos(thetax), -np.sin(thetax)], [0, np.sin(thetax), np.cos(thetax)]])
-        thetaz = 4.53
-        Rz = np.array([[np.cos(thetaz), -np.sin(thetaz), 0], [np.sin(thetaz), np.cos(thetaz), 0], [0, 0, 1]])
-
-        hitR = Rz@Rx@np.array([hitx[event_index], hity[event_index], hitz[event_index]])
-        hitx[event_index], hity[event_index], hitz[event_index] = hitR[0], hitR[1], hitR[2]
-
-      x2D, y2D = project2d_slow(hitx[event_index], hity[event_index], hitz[event_index], detector_geom, experiment) 
-      events_dic['xproj'].append(x2D)
-      events_dic['yproj'].append(y2D)
-      events_dic['charge'].append(charge[event_index])
-      events_dic['time'].append(time[event_index])
-
-    return events_dic, n_events
+  if experiment == 'WCTE' : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
+    # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
+    eps_top = 60
+    eps_bottom = 50
     
+    # WCTE is rotated in WCSim to have beam on the z axis, rotate it back to have cylinder axis on z axis like SK and HK, then rotate a tiny bit around z axis so as not to cut a column of PMTs in half (but also rotate the top and bottom caps though...)
+    print('Rotating WCTE events...')
+    thetax = np.pi/2
+    thetaz = 4.53
+    
+    # rotate around x axis
+    X_Rx = X
+    Y_Rx = np.cos(thetax)*Y + np.sin(thetax)*Z
+    Z_Rx = -np.sin(thetax)*Y + np.cos(thetax)*Z
+
+    # rotate around z axis
+    X = np.cos(thetaz)*X_Rx + np.sin(thetaz)*Y_Rx
+    Y = -np.sin(thetaz)*X_Rx + np.cos(thetaz)*Y_Rx
+    Z = Z_Rx
+
+  else :
+    eps_top = 0.01
+    eps_bottom = 0.01
+
+  top_cap_mask = Z > zMax - eps_top
+  bottom_cap_mask = Z < zMin + eps_bottom
+  cylinder_mask = np.logical_not(top_cap_mask | bottom_cap_mask)
+
+  # cylinder 
+
+  azimuth = np.arctan2(Y, X)
+  azimuth = ak.where(azimuth < 0, 2*np.pi + azimuth, azimuth)
+
+
+  Xproj = ak.where(cylinder_mask, cylinder_radius * (azimuth - np.pi), Xproj)
+  Yproj = ak.where(cylinder_mask, Z, Yproj)
+
+  # top cap
+  Xproj = ak.where(top_cap_mask, - Y, Xproj)
+  Yproj = ak.where(top_cap_mask, X + zMax + cylinder_radius, Yproj)
+
+  # bottom cap
+  Xproj = ak.where(bottom_cap_mask, - Y, Xproj)
+  Yproj = ak.where(bottom_cap_mask, - X + zMin - cylinder_radius, Yproj)
+
+  return Xproj, Yproj
+
 
 def load_data(path2events, events_file, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
 
@@ -232,7 +162,6 @@ def load_data(path2events, events_file, detector_geom, experiment, events_to_dis
 
     events_dic = {'xproj': ak.zeros_like(hitx), 'yproj': ak.zeros_like(hity), 'charge': ak.zeros_like(charge), 'time': ak.zeros_like(hitx)} # python dictionary to store data
 
-    
     print('2D projection...')
 
     Xproj, Yproj = project2d(hitx[event_start:event_end], hity[event_start:event_end], hitz[event_start:event_end], detector_geom, experiment)
@@ -371,10 +300,34 @@ def show_event_display(path2events, events_file, detector_geom, experiment, even
 
 
 
+
+def plot_event_3D(path2events, events_file, event_index, detector_geom, experiment) : # simple 3D plot of a given event, just to check if everything is in order
+
+  file = up.open(path2events + events_file)
+  events_root = file['root_event'] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
+
+  hitx = events_root['hitx'].array()
+  hity = events_root['hity'].array()
+  hitz = events_root['hitz'].array()
+
+  charge = events_root['charge'].array()
+
+  PMT_radius = detector_geom[experiment]['PMT_radius']
+
+  fig = plt.figure()
+  ax = fig.add_subplot(111, projection='3d')
+
+  ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=1, c=rescale_color(charge[event_index]), cmap='plasma')
+
+  plt.show()
+
+
+
+
 # Main ===========================================================================================
 
-
-show_event_display(path2events, events_file, detector_geom, experiment, events_to_display=events_to_display)
+if __name__ == "__main__":
+  show_event_display(path2events, events_file, detector_geom, experiment, events_to_display=events_to_display)
   
   
 
