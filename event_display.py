@@ -82,6 +82,20 @@ def events_index_bounds(events_to_display, n_events) : # get the bounds of the e
   return event_start, event_end
 
 
+def plot_event_3D(path2events, events_file, event_index, detector_geom, experiment) : # simple 3D plot of a given event, just to check if everything is in order
+  file = up.open(path2events + events_file)
+  events_root = file['root_event'] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
+  hitx = events_root['hitx'].array()
+  hity = events_root['hity'].array()
+  hitz = events_root['hitz'].array()
+  charge = events_root['charge'].array()
+  PMT_radius = detector_geom[experiment]['PMT_radius']
+  fig = plt.figure()
+  ax = fig.add_subplot(111, projection='3d')
+  ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=1, c=rescale_color(charge[event_index]), cmap='plasma')
+  plt.show()
+
+
 # Deal with data =======================================================================================
 
 def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder
