@@ -3,7 +3,6 @@ import argparse
 
 import numpy as np
 import uproot as up
-
 import matplotlib.pyplot as plt
 import tkinter as tk
 import awkward as ak
@@ -12,6 +11,8 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 
 
 
+# matplotlib.use('Agg')
+#os.environ["XDG_SESSION_TYPE"] = "xcb" # to avoid error with tkinter on some systems
 
 # Some useful detector dimensions (in cm) ======================================================================================
 
@@ -20,25 +21,6 @@ detector_geom = {
   'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 
   'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0}
 }
-
-
-# matplotlib.use('Agg')
-
-
-#os.environ["XDG_SESSION_TYPE"] = "xcb"
-
-# Access events root file ==================================================================
-
-# experiment = 'WCTE' # 'SK' or 'HK' or 'WCTE'
-
-# path2events = '../Data/' + experiment + '/'
-# events_file = '10_mu-_uni200-1000MeV_GPS.root'
-
-# events_to_display = 8 # 'all' to display all events, or tuple (event_start, event_end) to display all events between the event_start'th to the event_end'th events, or int event_index to only display the event_index'th event
-
-
-
-
 
 
 # Utility functions =======================================================================================
@@ -188,9 +170,64 @@ def load_data(file_path, tree_name, detector_geom, experiment, events_to_display
     return events_dic, n_events
 
 
-# Tkinter GUI =======================================================================================================================
+# Fast plot one event =========================================================================================================================
+
+def show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display=0, color='charge', save_path='', save_file='') : # fast plot event display for a single event with matplotlib, possibility to save as pdf
     
-def show_event_display(file_path, tree_name, detector_geom, experiment, events_to_display='all'): #plot event display with tkinter animation
+    print('Fast display =========================================================================================')
+    PMT_radius = detector_geom[experiment]['PMT_radius']
+    cylinder_radius = detector_geom[experiment]['cylinder_radius']
+    zMax = detector_geom[experiment]['height']/2
+    zMin = -detector_geom[experiment]['height']/2
+
+    if experiment == 'WCTE' : # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
+      PMT_radius -= 2
+
+      
+    if not(isinstance(events_to_display, int)) :
+      print('Error: only one event can be displayed with this function. Displaying first event instead.')
+      events_to_display = 0
+
+    events_dic, n_events = load_data(file_path, tree_name, detector_geom, experiment, events_to_display=events_to_display)
+
+    print('Opening display...')
+
+    # set figure and axes
+
+    fig, ax = plt.subplots(figsize = (6,6))
+
+    fig.suptitle(experiment + ' Event Display')
+    ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
+    ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
+    ax.set_aspect('equal')      
+    ax.set_xlabel(r'$x$ (cm)')
+    ax.set_ylabel(r'$z$ (cm)')
+
+    # draw detector
+    ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=False))
+    ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
+    ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
+
+    # draw event
+    c = rescale_color(events_dic[color][0])
+    ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma')
+
+    if save_path != '' :
+      print('Saving figure...')
+
+      if save_file == '' :
+        save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + '.pdf'
+
+      plt.savefig(save_path + save_file)
+
+    plt.show()
+
+
+# Tkinter GUI =======================================================================================================================
+
+def show_event_display_tk(file_path, tree_name, detector_geom, experiment, events_to_display='all') : # plot event display with tkinter animation
+
+    print('Tkinter GUI =========================================================================================')
 
     PMT_radius = detector_geom[experiment]['PMT_radius']
     cylinder_radius = detector_geom[experiment]['cylinder_radius']
@@ -200,7 +237,7 @@ def show_event_display(file_path, tree_name, detector_geom, experiment, events_t
     if experiment == 'WCTE' : # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
       PMT_radius -= 2
 
-    events_dic, n_events = load_data(file_path, tree_name, detector_geom, experiment, events_to_display = events_to_display)
+    events_dic, n_events = load_data(file_path, tree_name, detector_geom, experiment, events_to_display=events_to_display)
 
     print('Opening display...')
 
@@ -243,7 +280,23 @@ def show_event_display(file_path, tree_name, detector_geom, experiment, events_t
       
       elif input == 'entry_box':
 
-        event_index = int(wB.get())
+        event_index = wB.get()
+
+        if not(event_index.isdigit()) :
+          print('Error: event index should be an integer. Displaying first event instead.')
+          event_index = event_start
+          wB.delete(0, tk.END)
+          wB.insert(0, event_index)
+
+        else :
+          event_index = int(event_index)
+
+        if event_index < event_start or event_index >= event_end :
+          print('Error: event index out of bounds. Displaying first event instead.')
+          event_index = event_start
+          wB.delete(0, tk.END)
+          wB.insert(0, event_index)
+
         wE.set(event_index)
         update_time_slider(event_index)
 
@@ -287,6 +340,7 @@ def show_event_display(file_path, tree_name, detector_geom, experiment, events_t
     wB = tk.Entry(root)
     wB.pack()
     tk.Label(root, text='', width=2).pack()
+    wB.insert(0, str(event_start))
 
     button = tk.Button(root, text='Display Event', command=lambda : plot('entry_box'))
     button.pack()
@@ -313,6 +367,16 @@ def show_event_display(file_path, tree_name, detector_geom, experiment, events_t
     root.mainloop()
 
 
+# Main ==============================================================================================================
+
+def show_event_display(file_path, tree_name, detector_geom, experiment, events_to_display='all', tk=False, color='charge', save_path='', save_file='') : # main function to display events
+
+  if tk:
+    show_event_display_tk(file_path, tree_name, detector_geom, experiment, events_to_display)
+
+  else :
+    show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display, color, save_path, save_file)
+   
 
 if __name__ == "__main__":
 
@@ -327,14 +391,32 @@ if __name__ == "__main__":
       "-f", "--file", type=str, required=True,
       help="Full path to the events root file."
   )
+
+  # Define optional arguments
   parser.add_argument(
-      "-d", "--display", type=str, default='0',
+      "-d", "--display", type=str, default="0",
       help="Events to display: 'all' to display all events, a single integer for a specific event index, "
             "or a range 'start:end' (e.g., '3:10'). Default first event."
   )
   parser.add_argument(
       "-t", "--tree", type=str, default="root_event",
       help="Name of the TTree inside the root file (default: 'root_event')."
+  )
+  parser.add_argument(
+      "-tk", "--tkinter_GUI", action="store_true",
+      help="Use tkinter GUI to display events."
+  )
+  parser.add_argument(
+      "-c", "--color", type=str, default="charge",
+      help="Color scheme for the event display: 'charge' or 'time'."
+  )
+  parser.add_argument(
+      "-sp", "--save_path", type=str, default="",
+      help="Path where to save the event display of a single event."
+  )
+  parser.add_argument(
+      "-sf", "--save_file", type=str, default="",
+      help="Name of the file to save the event display of a single event. When it is not specified but save_path is, the file name will be the name of the root file followed by the event index."
   )
 
   args = parser.parse_args()
@@ -356,8 +438,17 @@ if __name__ == "__main__":
   print(f"Path to Events File: {args.file}")
   print(f"Events to Display: {events_to_display}")
   print(f"TTree Name: {args.tree}")
+  print(f"Use Tkinter GUI: {args.tkinter_GUI}")
 
-  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display)
+  if not(args.tkinter_GUI) :
+
+    print(f"Color Scheme: {args.color}")
+    if args.save_path != "" :
+      print(f"Save Path: {args.save_path + args.save_file}")
+
+  # Call the main function
+
+  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display, tk=args.tkinter_GUI, color=args.color, save_path=args.save_path, save_file=args.save_file)
 
 
 
