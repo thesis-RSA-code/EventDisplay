@@ -11,7 +11,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 
 
 
-# matplotlib.use('Agg')
+#matplotlib.use('Agg')
 #os.environ["XDG_SESSION_TYPE"] = "xcb" # to avoid error with tkinter on some systems
 
 # Some useful detector dimensions (in cm) ======================================================================================
@@ -188,13 +188,13 @@ def load_data(file_path, tree_name, detector_geom, experiment, events_to_display
     events_dic['add_info'] = []
 
     if 'twall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'values': events_root['twall'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['twall'].array()[event_start:event_end]})
 
     if 'dwall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'values': events_root['dwall'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['dwall'].array()[event_start:event_end]})
 
     if 'energy' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$E$', 'values': events_root['energy'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$E$', 'unit': 'MeV', 'values': events_root['energy'].array()[event_start:event_end]})
 
 
 
@@ -229,8 +229,10 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
     fig, ax = plt.subplots(figsize = (6,6))
 
     fig.suptitle(experiment + ' Event Display')
-    #add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][events_to_display]) for info in events_dic['add_info']])
-    #plt.title(add_info_string)
+
+    add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
+    plt.title(add_info_string)
+
     ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
     ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
     ax.set_aspect('equal')      
@@ -292,7 +294,9 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
 
       # set figure and axes
       ax.clear()
+
       fig.suptitle(experiment + ' Event Display')
+
       ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
       ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
       ax.set_aspect('equal')
@@ -343,7 +347,9 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
 
       event_index -= event_start
 
-
+      add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][event_index]) + ' ' + info['unit'] for info in events_dic['add_info']])
+      plt.title(add_info_string)
+      
       x2D, y2D, charge, time = events_dic['xproj'][event_index], events_dic['yproj'][event_index], events_dic['charge'][event_index], events_dic['time'][event_index]
 
       sorting_indices = np.argsort(time) # sort by time of trigger, so as to display them accordingly
