@@ -83,6 +83,7 @@ def events_index_bounds(events_to_display, n_events) : # get the bounds of the e
 
 
 def plot_event_3D(path2events, events_file, event_index, detector_geom, experiment) : # simple 3D plot of a given event, just to check if everything is in order
+  
   file = up.open(path2events + events_file)
   events_root = file['root_event'] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
   hitx = events_root['hitx'].array()
@@ -158,6 +159,7 @@ def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions o
 def load_data(file_path, tree_name, detector_geom, experiment, events_to_display='all') : # load data from root file and project it to 2D
 
     print('Loading data...')
+
     file = up.open(file_path)
     events_root = file[tree_name] # TTree of events variables {'hitx', 'hity', 'hitz', 'charge', 'time'}
 
@@ -181,14 +183,30 @@ def load_data(file_path, tree_name, detector_geom, experiment, events_to_display
     events_dic['charge'] = charge[event_start:event_end]
     events_dic['time'] = time[event_start:event_end]
 
+    # additional info
+
+    events_dic['add_info'] = []
+
+    if 'twall' in events_root.keys() :
+      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'values': events_root['twall'].array()[event_start:event_end]})
+
+    if 'dwall' in events_root.keys() :
+      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'values': events_root['dwall'].array()[event_start:event_end]})
+
+    if 'energy' in events_root.keys() :
+      events_dic['add_info'].append({'label': r'$E$', 'values': events_root['energy'].array()[event_start:event_end]})
+
+
+
     return events_dic, n_events
 
 
 # Fast plot one event =========================================================================================================================
 
-def show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display=0, color='charge', save_path='', save_file='') : # fast plot event display for a single event with matplotlib, possibility to save as pdf
+def show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display=0, color='charge', show=True, save_path='', save_file='') : # fast plot event display for a single event with matplotlib, possibility to save as pdf
     
     print('Fast display =========================================================================================')
+
     PMT_radius = detector_geom[experiment]['PMT_radius']
     cylinder_radius = detector_geom[experiment]['cylinder_radius']
     zMax = detector_geom[experiment]['height']/2
@@ -204,13 +222,15 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
 
     events_dic, n_events = load_data(file_path, tree_name, detector_geom, experiment, events_to_display=events_to_display)
 
-    print('Opening display...')
+    print('Creating display...')
 
     # set figure and axes
 
     fig, ax = plt.subplots(figsize = (6,6))
 
     fig.suptitle(experiment + ' Event Display')
+    #add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][events_to_display]) for info in events_dic['add_info']])
+    #plt.title(add_info_string)
     ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
     ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
     ax.set_aspect('equal')      
@@ -234,7 +254,7 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
 
       plt.savefig(save_path + save_file)
 
-    plt.show()
+    if show : plt.show()
 
 
 # Tkinter GUI =======================================================================================================================
@@ -383,13 +403,13 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
 
 # Main ==============================================================================================================
 
-def show_event_display(file_path, tree_name, detector_geom, experiment, events_to_display='all', tk=False, color='charge', save_path='', save_file='') : # main function to display events
+def show_event_display(file_path, tree_name, detector_geom, experiment, events_to_display='all', tk=False, color='charge', show=True, save_path='', save_file='') : # main function to display events
 
   if tk:
     show_event_display_tk(file_path, tree_name, detector_geom, experiment, events_to_display)
 
   else :
-    show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display, color, save_path, save_file)
+    show_event_display_plt(file_path, tree_name, detector_geom, experiment, events_to_display, color, show, save_path, save_file)
    
 
 if __name__ == "__main__":
@@ -425,13 +445,18 @@ if __name__ == "__main__":
       help="Color scheme for the event display: 'charge' or 'time'."
   )
   parser.add_argument(
+      "-s", "--show", action="store_true",
+      help="Show the event display of a single event." 
+  )
+  parser.add_argument(
       "-sp", "--save_path", type=str, default="",
-      help="Path where to save the event display of a single event."
+      help="Path where to save the event display of a single event. If empty, the event display will not be saved."
   )
   parser.add_argument(
       "-sf", "--save_file", type=str, default="",
-      help="Name of the file to save the event display of a single event. When it is not specified but save_path is, the file name will be the name of the root file followed by the event index."
+      help="Name of the file to save the event display of a single event. When it is not specified but save_path is, the file name will be the name of the root file followed by the event index. Only used when save_path is not empty."
   )
+
 
   args = parser.parse_args()
 
@@ -452,7 +477,6 @@ if __name__ == "__main__":
   print(f"Path to Events File: {args.file}")
   print(f"Events to Display: {events_to_display}")
   print(f"TTree Name: {args.tree}")
-  print(f"Use Tkinter GUI: {args.tkinter_GUI}")
 
   if not(args.tkinter_GUI) :
 
@@ -462,7 +486,7 @@ if __name__ == "__main__":
 
   # Call the main function
 
-  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display, tk=args.tkinter_GUI, color=args.color, save_path=args.save_path, save_file=args.save_file)
+  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display, tk=args.tkinter_GUI, color=args.color, show=args.show, save_path=args.save_path, save_file=args.save_file)
 
 
 
