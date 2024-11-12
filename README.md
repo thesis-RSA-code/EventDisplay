@@ -22,7 +22,7 @@ The program minimally requires the location of the root file as well as the name
 python3 event_display.py -f 'path/to/events.root' -e 'SK' -d 'all'
 ```
 
-You can browse all of the possible option by running
+You can browse all of the possible options by running
 
 ```bash 
 python3 event_display.py -h
