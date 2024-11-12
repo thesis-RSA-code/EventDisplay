@@ -4,12 +4,15 @@ import argparse
 import numpy as np
 import uproot as up
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import tkinter as tk
 import awkward as ak
 
+
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
+plt.rcParams['savefig.format'] = 'pdf'
 
 #matplotlib.use('Agg')
 #os.environ["XDG_SESSION_TYPE"] = "xcb" # to avoid error with tkinter on some systems
@@ -51,35 +54,34 @@ def compute_PMT_marker_size(PMT_radius, fig, ax) : # compute the size of PMT sca
 def events_index_bounds(events_to_display, n_events) : # get the bounds of the events to display
 
   if events_to_display == 'all' : # display all events
-      event_start = 0
-      event_end = n_events
+      event_indices = [i for i in range(n_events)]
 
   elif isinstance(events_to_display, tuple) : # display only a subrange of events
 
     if events_to_display[0] < 0 or events_to_display[1] > n_events or events_to_display[0] > events_to_display[1] :
       print('Error: events index out of bounds. Displaying first event instead.')
-      event_start = 0
-      event_end = 1
-    
-    event_start = events_to_display[0]
-    event_end = events_to_display[1]
+      event_indices = [0]
+
+    else :
+      event_indices = [event_index for event_index in range(events_to_display[0], events_to_display[-1])]
+
+  elif isinstance(events_to_display, list) : # display a list of specific event indices
+    event_indices = events_to_display
     
   elif isinstance(events_to_display, int) : # display only one event
 
     if events_to_display < 0 or events_to_display >= n_events :
       print('Error: event index out of bounds. Displaying first event instead.')
-      event_start = 0
-      event_end = 1
+      event_indices = [0]
 
-    event_start = events_to_display
-    event_end = events_to_display + 1
+    else :
+      event_indices = [events_to_display]
 
   else :
     print('Error: events_to_display should be an integer, a tuple or "all". Displaying first event instead.')
-    event_start = 0
-    event_end = 1
+    event_indices = [0]
 
-  return event_start, event_end
+  return event_indices
 
 
 def plot_event_3D(path2events, events_file, event_index, detector_geom, experiment) : # simple 3D plot of a given event, just to check if everything is in order
@@ -120,8 +122,8 @@ def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions o
     
     # rotate around x axis
     X_Rx = X
-    Y_Rx = np.cos(thetax)*Y + np.sin(thetax)*Z
-    Z_Rx = -np.sin(thetax)*Y + np.cos(thetax)*Z
+    Y_Rx = np.cos(thetax)*Y - np.sin(thetax)*Z
+    Z_Rx = np.sin(thetax)*Y + np.cos(thetax)*Z
 
     # rotate around z axis
     X = np.cos(thetaz)*X_Rx + np.sin(thetaz)*Y_Rx
@@ -171,30 +173,30 @@ def load_data(file_path, tree_name, detector_geom, experiment, events_to_display
     charge = events_root['charge'].array()
     time = events_root['time'].array()
 
-    event_start, event_end = events_index_bounds(events_to_display, n_events)
+    event_indices = events_index_bounds(events_to_display, n_events)
 
     events_dic = {'xproj': ak.zeros_like(hitx), 'yproj': ak.zeros_like(hity), 'charge': ak.zeros_like(charge), 'time': ak.zeros_like(hitx)} # python dictionary to store data
 
     print('2D projection...')
 
-    Xproj, Yproj = project2d(hitx[event_start:event_end], hity[event_start:event_end], hitz[event_start:event_end], detector_geom, experiment)
+    Xproj, Yproj = project2d(hitx[event_indices], hity[event_indices], hitz[event_indices], detector_geom, experiment)
     events_dic['xproj'] = Xproj
     events_dic['yproj'] = Yproj
-    events_dic['charge'] = charge[event_start:event_end]
-    events_dic['time'] = time[event_start:event_end]
+    events_dic['charge'] = charge[event_indices]
+    events_dic['time'] = time[event_indices]
 
     # additional info
 
     events_dic['add_info'] = []
 
     if 'twall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['twall'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['twall'].array()[event_indices]})
 
     if 'dwall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['dwall'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['dwall'].array()[event_indices]})
 
     if 'energy' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$E$', 'unit': 'MeV', 'values': events_root['energy'].array()[event_start:event_end]})
+      events_dic['add_info'].append({'label': r'$E$', 'unit': 'MeV', 'values': events_root['energy'].array()[event_indices]})
 
 
 
@@ -246,7 +248,13 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
 
     # draw event
     c = rescale_color(events_dic[color][0])
-    ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma')
+    scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma')
+    
+    # nice colorbar
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    
+    plt.colorbar(scatter, label=color, cax=cax)
 
     if save_path != '' :
       print('Saving figure...')
@@ -281,14 +289,16 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
 
     def update_time_slider(event_index) : # update time slider according to event_slider
 
-      event_index = int(event_index) - event_start
+      event_index = int(event_index) 
       time = times[event_index]
       time = np.sort(time)
 
       wt.config(from_=time[0], to=time[-1], resolution=(time[-1]-time[0])/100000)
       wt.set(times[event_index][-1])
 
+
     fig, ax = plt.subplots(figsize = (6,6))
+
 
     def plot(input): # plot command to be called by tkinter slider
 
@@ -313,39 +323,38 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
 
         event_index = wE.get()
         wB.delete(0, tk.END)  # Clear any existing value
-        wB.insert(0, event_index) 
+        wB.insert(0, event_indices[event_index]) 
         update_time_slider(event_index)
       
       elif input == 'entry_box':
 
-        event_index = wB.get()
+        event_index_original = wB.get()
 
-        if not(event_index.isdigit()) :
+        if not(event_index_original.isdigit()) :
           print('Error: event index should be an integer. Displaying first event instead.')
-          event_index = event_start
+          event_index = 0
           wB.delete(0, tk.END)
           wB.insert(0, event_index)
 
         else :
-          event_index = int(event_index)
+          event_index_original = int(event_index_original)
 
-        if event_index < event_start or event_index >= event_end :
+        if not(event_index_original in event_indices) :
           print('Error: event index out of bounds. Displaying first event instead.')
-          event_index = event_start
+          event_index_original = event_indices[0]
           wB.delete(0, tk.END)
-          wB.insert(0, event_index)
+          wB.insert(0, event_index_original)
 
+        event_index = event_indices.index(event_index_original)
         wE.set(event_index)
         update_time_slider(event_index)
 
       elif input == 'time_slider':
 
-        event_index = wE.get()
+        event_index = int(wE.get())
 
       else :
-        event_index = event_start
-
-      event_index -= event_start
+        event_index = 0
 
       add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][event_index]) + ' ' + info['unit'] for info in events_dic['add_info']])
       plt.title(add_info_string)
@@ -358,7 +367,7 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
       tmax = wt.get()
 
       x_before_t, y_before_t, charge_before_t = x2D[time < tmax], y2D[time < tmax], charge[time < tmax]
-      ax.scatter(x_before_t, y_before_t, s=compute_PMT_marker_size(PMT_radius, fig, ax), c=rescale_color(charge_before_t), cmap='plasma')
+      scatter = ax.scatter(x_before_t, y_before_t, s = compute_PMT_marker_size(PMT_radius, fig, ax), c=rescale_color(charge_before_t), cmap='plasma')
 
       canvas.draw()
 
@@ -373,30 +382,30 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
     toolbar = NavigationToolbar2Tk(canvas, root)
     toolbar.update()
 
-    event_start, event_end = events_index_bounds(events_to_display, n_events)
+    event_indices = events_index_bounds(events_to_display, n_events)
+
+    # event slider =====================================================
+    tk.Label(root, text = 'Slide events').pack()
+    wE = tk.Scale(root, from_=0, to=len(event_indices)-1, orient=tk.HORIZONTAL, command=lambda _: plot('event_slider'), showvalue=0)
+    wE.pack()
 
     # entry box =========================================================
-
     wB = tk.Entry(root)
     wB.pack()
     tk.Label(root, text='', width=2).pack()
-    wB.insert(0, str(event_start))
+    wB.insert(0, event_indices[0])
 
     button = tk.Button(root, text='Display Event', command=lambda : plot('entry_box'))
     button.pack()
 
-
-    # event slider =====================================================
-    wE = tk.Scale(root, from_=event_start, to=event_end-1, orient=tk.HORIZONTAL, command=lambda _: plot('event_slider'))
-    wE.pack()
-    tk.Label(root, text = 'Slide events').pack()
-
     # time slider =======================================================
+    tk.Label(root, text = 'Time').pack()
     wt = tk.Scale(root, orient=tk.HORIZONTAL, command=lambda _: plot('time_slider'))
     wt.pack()
-    tk.Label(root, text = 'Time').pack()
 
-    update_time_slider(event_start)
+    # custop label for slider ===========================================
+
+    update_time_slider(0)
 
     def _quit():
         root.quit()
@@ -435,8 +444,8 @@ if __name__ == "__main__":
   # Define optional arguments
   parser.add_argument(
       "-d", "--display", type=str, default="0",
-      help="Events to display: 'all' to display all events, a single integer for a specific event index, "
-            "or a range 'start:end' (e.g., '3:10'). Default first event."
+      help="Events to display: 'all' to display all events, a single integer for a specific event index (e.g. '10'), "
+             "a range 'start:end' (e.g., '3:10') or a list of event indices separated by | (e.g. '1|76|356'). Default first event."
   )
   parser.add_argument(
       "-t", "--tree", type=str, default="root_event",
@@ -447,12 +456,12 @@ if __name__ == "__main__":
       help="Use tkinter GUI to display events."
   )
   parser.add_argument(
-      "-c", "--color", type=str, default="charge",
-      help="Color scheme for the event display: 'charge' or 'time'."
-  )
-  parser.add_argument(
       "-s", "--show", action="store_true",
       help="Show the event display of a single event." 
+  )
+  parser.add_argument(
+      "-c", "--color", type=str, default="charge", choices=["charge", "time"],
+      help="Color scheme for the single event event display: 'charge' or 'time'."
   )
   parser.add_argument(
       "-sp", "--save_path", type=str, default="",
@@ -460,7 +469,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
       "-sf", "--save_file", type=str, default="",
-      help="Name of the file to save the event display of a single event. When it is not specified but save_path is, the file name will be the name of the root file followed by the event index. Only used when save_path is not empty."
+      help="Name of the file to save the event display of a single event. When it is not specified but save_path is, the file name will be the name of the root file followed by the event index. Only used when save_path is not empty. Default format is pdf."
   )
 
 
@@ -473,6 +482,9 @@ if __name__ == "__main__":
       # Parse range of events, e.g., "3:10"
       start, end = map(int, args.display.split(":"))
       events_to_display = (start, end)
+  elif "|" in args.display:
+      # Parse a list of events, e.g. "3|49|107"
+      events_to_display = [int(index) for index in args.display.split("|")]
   else:
       # Single event index
       events_to_display = int(args.display)
