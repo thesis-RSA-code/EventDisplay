@@ -1,15 +1,11 @@
 #!/bin/bash
 
-file_path=/sps/t2k/eleblevec/WCSimPackage/GraphDatasets/RootExplorer/outputs/test_c_v1.root
-events='0:1900'
-tree_name=filtered_tree
+file_path='/sps/t2k/mferey/WCSim2ML/Data/SK/30_mu-_1000MeV_GPS.root'
+events='2|15|27|3'
 
-sp=/sps/t2k/eleblevec/BigBrother/EventDisplay/outputs/
-sf=one_display_test.png
+sp='plots/'
 
 python event_display.py \
-    -e 'HK' \
-    -t $tree_name \
+    -e 'SK' \
     -f $file_path \
     -d $events \
-    -sp $sp \

@@ -497,7 +497,7 @@ if __name__ == "__main__":
   print(f"TTree Name: {args.tree}")
 
 
-  if args.tkinter_GUI or isinstance(events_to_display, tuple) or ( events_to_display == 'all'):
+  if args.tkinter_GUI or isinstance(events_to_display, tuple) or ( events_to_display == 'all') or (isinstance(events_to_display, list)) :
     tk_display = True
   else:
 
