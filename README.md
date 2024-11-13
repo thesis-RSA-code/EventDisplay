@@ -16,13 +16,19 @@ conda activate event_display
 
 # Run the program
 
-To execute the program, first indicate the location and of the root file whose events you wish to display. Simply change the variables `path2event` and `events_file` in `event_display.py`. The variable `events_to_display` selects the specific events you want to display, `"all"` being all of the events in the root file, an integer only a specific event and a tuple of integers all of the events between the first index and the second index (particularly useful if the root file contains a lot of events, which could potentially take up too much RAM and processing time to open the event display). Then simply execute the program with
+The program minimally requires the location of the root file as well as the name of the experiment. All arguments, including optional arguments, are passed to the code through a parser. To display all of the events simulated in SK contained in events.root, simply type  
 
 ```bash 
-python3 event_display.py
+python3 event_display.py -f 'path/to/events.root' -e 'SK' -d 'all'
 ```
 
-Note that the code opens an interactive Tkinter window, so X11 forwarding should be enabled when executing the program remotely through a ssh connection. When connecting with a terminal, this is done with
+You can browse all of the possible options by running
+
+```bash 
+python3 event_display.py -h
+```
+
+Note that the code opens an interactive Tkinter window or a matplotlib window, so X11 forwarding should be enabled when executing the program remotely through a ssh connection. When connecting with a terminal, this is done with
 
 ```bash
 ssh -X user@remote_ip
@@ -42,8 +48,6 @@ Host hostname
 # TO DO
 
 - It would be great the read the geometry characterics of the detectors (height, radius, PMT radius) directly from the root file, so as to support any cylindrical tank without having to manually add it to the `detector_geom` dictionnary. It would first require the modification of the `wcsimroot_to_root` software. The tag indicating whether a PMT sits on the cylinder, the bottom or top cap would also be appreciable, so as to facilitate the projection.
-
-- Browsing through time with a slider might not be the best. Maybe display time with the PMTs color, and add the possibility to switch the PMTs colours between charge and time.
 
 - Purely cosmetics, but maybe have a better widget layout... really not a priority.
 
