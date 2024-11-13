@@ -8,9 +8,11 @@ import matplotlib.colors as mcolors
 import tkinter as tk
 import awkward as ak
 
-
+from scipy.stats import rankdata
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 plt.rcParams['savefig.format'] = 'pdf'
 
@@ -30,8 +32,14 @@ detector_geom = {
 
 def rescale_color(x) : # rescale colors with sigmoid to have better color range
   if len(x) > 1 :
-    return 1 / (1 + np.exp(-(x-np.mean(x))/np.std(x))) # sigmoid
+    return 1 / (1 + np.exp(-(x-np.median(x))/np.std(x))) # sigmoid
+    #return 1 / (1 + np.exp(-x)/np.std(x)) # sigmoid
   return x
+
+
+def rescale_color_inv(x_r, x0, sigma) : # inverse sigmoid to get back to original color scale
+
+    return x0 + sigma * np.log(x_r/(1-x_r)) 
 
 
 def compute_PMT_marker_size(PMT_radius, fig, ax) : # compute the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
@@ -246,13 +254,20 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
 
     # draw event
     c = rescale_color(events_dic[color][0])
-    scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma')
+    norm = Normalize(vmin=np.min(c), vmax=np.max(c))
+    scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma', norm=norm)
     
     # nice colorbar
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
+
+    cbar = plt.colorbar(scatter, label=color, cax=cax)
+
+    ticks = np.linspace(np.min(c), np.max(c), num=4)
+    tick_labels = [f"{rescale_color_inv(tick, np.median(events_dic[color][0]), np.std(events_dic[color][0])):.1f}" for tick in ticks]
+    cbar.set_ticks(ticks)
+    cbar.set_ticklabels(tick_labels)
     
-    plt.colorbar(scatter, label=color, cax=cax)
 
     if save_path != '' :
       print('Saving figure...')
@@ -260,7 +275,7 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
       if save_file == '' :
         save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + '.pdf'
 
-      plt.savefig(save_path + save_file)
+      plt.savefig(save_path + save_file, bbox_inches="tight")
 
     if show : plt.show()
 
