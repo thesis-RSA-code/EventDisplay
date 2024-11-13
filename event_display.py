@@ -189,16 +189,14 @@ def load_data(file_path, tree_name, detector_geom, experiment, events_to_display
 
     events_dic['add_info'] = []
 
-    if 'twall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['twall'].array()[event_indices]})
+    if 'new_twall' in events_root.keys() :
+      events_dic['add_info'].append({'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['new_twall'].array()[event_indices]})
 
-    if 'dwall' in events_root.keys() :
-      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['dwall'].array()[event_indices]})
+    if 'new_dwall' in events_root.keys() :
+      events_dic['add_info'].append({'label': r'$d_\mathrm{wall}$', 'unit': 'cm', 'values': events_root['new_dwall'].array()[event_indices]})
 
     if 'energy' in events_root.keys() :
       events_dic['add_info'].append({'label': r'$E$', 'unit': 'MeV', 'values': events_root['energy'].array()[event_indices]})
-
-
 
     return events_dic, n_events
 
@@ -218,7 +216,7 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
       PMT_radius -= 2
 
       
-    if not(isinstance(events_to_display, int)) :
+    if not isinstance(events_to_display, int) :
       print('Error: only one event can be displayed with this function. Displaying first event instead.')
       events_to_display = 0
 
@@ -232,7 +230,7 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
 
     fig.suptitle(experiment + ' Event Display')
 
-    add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
+    add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0].round(2)) + ' ' + info['unit'] for info in events_dic['add_info']])
     plt.title(add_info_string)
 
     ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
@@ -356,7 +354,7 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
       else :
         event_index = 0
 
-      add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][event_index]) + ' ' + info['unit'] for info in events_dic['add_info']])
+      add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][event_index].round(2)) + ' ' + info['unit'] for info in events_dic['add_info']])
       plt.title(add_info_string)
       
       x2D, y2D, charge, time = events_dic['xproj'][event_index], events_dic['yproj'][event_index], events_dic['charge'][event_index], events_dic['time'][event_index]
@@ -475,11 +473,12 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
+
   # Parse `events_to_display`
   if args.display.lower() == "all":
       events_to_display = "all"
-  elif ":" in args.display:
-      # Parse range of events, e.g., "3:10"
+      
+  elif ":" in args.display: # Parse range of events, e.g., "3:10"
       start, end = map(int, args.display.split(":"))
       events_to_display = (start, end)
   elif "|" in args.display:
@@ -489,22 +488,28 @@ if __name__ == "__main__":
       # Single event index
       events_to_display = int(args.display)
 
+    
   # Output the parsed arguments
   print("Parsed Arguments:")
   print(f"Experiment: {args.experiment}")
   print(f"Path to Events File: {args.file}")
-  print(f"Events to Display: {events_to_display}")
+  print(f"Event(s) to Display: {events_to_display}")
   print(f"TTree Name: {args.tree}")
 
-  if not(args.tkinter_GUI) :
 
-    print(f"Color Scheme: {args.color}")
+  if args.tkinter_GUI or isinstance(events_to_display, tuple) or ( events_to_display == 'all'):
+    tk_display = True
+  else:
+
+    tk_display = False
     if args.save_path != "" :
       print(f"Save Path: {args.save_path + args.save_file}")
 
-  # Call the main function
+    #print(f"Color Scheme: {args.color}")
 
-  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display, tk=args.tkinter_GUI, color=args.color, show=args.show, save_path=args.save_path, save_file=args.save_file)
+
+  # Call the main function
+  show_event_display(args.file, args.tree, detector_geom, args.experiment, events_to_display=events_to_display, tk=tk_display, color=args.color, show=args.show, save_path=args.save_path, save_file=args.save_file)
 
 
 
