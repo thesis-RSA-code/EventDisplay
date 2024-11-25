@@ -19,7 +19,7 @@ conda activate event_display
 The program minimally requires the location of the root file as well as the name of the experiment. All arguments, including optional arguments, are passed to the code through a parser. To display all of the events simulated in SK contained in events.root, simply type  
 
 ```bash 
-python3 event_display.py -f 'path/to/events.root' -e 'SK' -d 'all'
+python3 event_display.py -f 'path/to/events.root' -e 'SK' -d 'all' -tk
 ```
 
 You can browse all of the possible options by running
