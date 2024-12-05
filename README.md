@@ -47,7 +47,7 @@ Host hostname
 
 Enjoy !
 
-[30_mu-_1000MeV_GPS_6.pdf](https://github.com/user-attachments/files/18021297/30_mu-_1000MeV_GPS_6.pdf)
+![30_mu-_1000MeV_GPS_6-1](https://github.com/user-attachments/assets/0116d31e-ea78-4380-903f-adfda5be5e45)
 
 
 # TO DO
