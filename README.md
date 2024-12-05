@@ -45,6 +45,11 @@ Host hostname
     ForwardX11Trusted yes
 ```
 
+Enjoy !
+
+[30_mu-_1000MeV_GPS_6.pdf](https://github.com/user-attachments/files/18021297/30_mu-_1000MeV_GPS_6.pdf)
+
+
 # TO DO
 
 - It would be great the read the geometry characterics of the detectors (height, radius, PMT radius) directly from the root file, so as to support any cylindrical tank without having to manually add it to the `detector_geom` dictionnary. It would first require the modification of the `wcsimroot_to_root` software. The tag indicating whether a PMT sits on the cylinder, the bottom or top cap would also be appreciable, so as to facilitate the projection.
