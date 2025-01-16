@@ -248,9 +248,11 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
     ax.set_ylabel(r'$z$ (cm)')
 
     # draw detector
-    ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=False))
-    ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
-    ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
+    ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=True, color='black'))
+    ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=True, color='black'))
+    ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=True, color='black'))
+
+    #ax.set_facecolor('grey')
 
     # draw event
     c = rescale_color(events_dic[color][0])
@@ -267,6 +269,8 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
     tick_labels = [f"{rescale_color_inv(tick, np.median(events_dic[color][0]), np.std(events_dic[color][0])):.1f}" for tick in ticks]
     cbar.set_ticks(ticks)
     cbar.set_ticklabels(tick_labels)
+
+    #ax.set_axis_off()
     
 
     if save_path != '' :
@@ -275,7 +279,7 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
       if save_file == '' :
         save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + '.pdf'
 
-      plt.savefig(save_path + save_file, bbox_inches="tight")
+      plt.savefig(save_path + save_file, bbox_inches="tight", transparent=True, dpi=300)
 
     if show : plt.show()
 
@@ -327,9 +331,9 @@ def show_event_display_tk(file_path, tree_name, detector_geom, experiment, event
       ax.set_ylabel(r'$z$ (cm)')
 
       # draw detector
-      ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax,fill=False))
-      ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
-      ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
+      ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=True, color='black'))
+      ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=True, color='black'))
+      ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=True, color='black'))
 
       # get event
       if input == 'event_slider':
