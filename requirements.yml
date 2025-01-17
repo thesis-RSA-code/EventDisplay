@@ -1,11 +1,14 @@
 name: event_display
 channels:
+  - conda-forge
   - defaults
 dependencies:
-  - numpy=1.24.3
-  - matplotlib=3.8.4
-  - tk = 8.6.14
-  - tqdm
+  - python=3.12  # You can adjust this version as needed
+  - numpy
+  - awkward
+  - uproot
+  - pyvista
+  - cloudpickle  # `pickle` is part of Python's standard library, but `cloudpickle` extends it for distributed tasks
   - pip
   - pip:
-    - uproot==5.3.1
+      - vtk

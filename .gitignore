@@ -4,3 +4,4 @@ plots/
 outputs/*
 launch_display.sh
 launch_display.sh
+*.pkl
