@@ -50,6 +50,11 @@ Enjoy !
 ![30_mu-_1000MeV_GPS_6-1](https://github.com/user-attachments/assets/0116d31e-ea78-4380-903f-adfda5be5e45)
 
 
+# Showering Display
+
+The program `showering_display.py` shows a 3D view of the event inside the detector using pyvista. It displays the tracks of the particles that were tracked in the WCSim simulation. The input root file has to be the output of `WCSimRoot_to_root_all_tracks`.
+
+
 # TO DO
 
 - It would be great the read the geometry characterics of the detectors (height, radius, PMT radius) directly from the root file, so as to support any cylindrical tank without having to manually add it to the `detector_geom` dictionnary. It would first require the modification of the `wcsimroot_to_root` software. The tag indicating whether a PMT sits on the cylinder, the bottom or top cap would also be appreciable, so as to facilitate the projection.
