@@ -24,7 +24,7 @@ plt.rcParams['savefig.format'] = 'pdf'
 detector_geom = {
   'SK': {'height': 3620.0, 'cylinder_radius': 3368.15/2, 'PMT_radius': 25.4}, 
   'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 
-  'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0}
+  'WCTE': {'height': 271.4235, 'cylinder_radius': 307.5926/2, 'PMT_radius': 4.0}
 }
 
 
