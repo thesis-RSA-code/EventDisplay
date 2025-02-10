@@ -53,7 +53,7 @@ def rescale_color(x) : # rescale colors with sigmoid to have better color range
   return x
 
 
-def compute_tracks(trackId, parentId, particleStart, particleStop, track_file) :
+def compute_tracks(trackId, parentId, particleStart, particleStop) :
 
     tracks = {str(track): [] for track in trackId}
 
@@ -66,14 +66,10 @@ def compute_tracks(trackId, parentId, particleStart, particleStop, track_file) :
 
         tracks[str(track)] = ak.flatten(vertices)
 
-    # Write dictionary to a pickle file
-    with open(f"{track_file}.pkl", "wb") as file:
-        pck.dump(tracks, file)
-
     return tracks
 
 
-def load_data(root_file, tree_name, event_index, track_file) :
+def load_data(root_file, tree_name, event_index) :
 
     print("Loading event and track data...")
 
@@ -92,6 +88,7 @@ def load_data(root_file, tree_name, event_index, track_file) :
     trackId = event_tree['trackId'].array()[event_index]
     parentId = event_tree['parentId'].array()[event_index]
     flag = event_tree['flag'].array()[event_index]
+    creatorProcess = event_tree['CreatorProcess'].array()[event_index]
 
     # select primary particle (flag == 0 and parentId == 0)
     primaryId = trackId[(flag == 0) & (parentId == 0)][0]
@@ -106,17 +103,12 @@ def load_data(root_file, tree_name, event_index, track_file) :
     particleStop = particleStop[pId != 0]
     trackId = trackId[pId != 0]
     parentId = parentId[pId != 0]
+    creatorProcess = creatorProcess[pId != 0]
     pId = pId[pId != 0]
 
-    # compute tracks
-    # check if tracks have already been computed
-    try:
-        with open(f"{track_file}.pkl", "rb") as file:
-            print("Tracks data already computed, loading file...")
-            tracks = pck.load(file)
-    except FileNotFoundError:
-        print("Tracks data not found, computing and saving tracks...")
-        tracks = compute_tracks(trackId, parentId, particleStart, particleStop, track_file)
+    # Compute tracks vertices
+    print("Computing tracks vertices...")
+    tracks = compute_tracks(trackId, parentId, particleStart, particleStop)
     
     data = {
     "trackId": trackId,
@@ -124,6 +116,7 @@ def load_data(root_file, tree_name, event_index, track_file) :
     "particleStart": particleStart,
     "particleStop": particleStop,
     "tracks": tracks,
+    "creatorProcess": creatorProcess,
     "primaryId": primaryId,
     "gammaStart": gammaStart,
     "gammaStop": gammaStop,
@@ -149,39 +142,67 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
     particleStart = data["particleStart"]
     particleStop = data["particleStop"]
     tracks = data["tracks"]
+    creatorProcess = data["creatorProcess"]
     primaryId = data["primaryId"]
     gammaStart = data["gammaStart"]
     gammaStop = data["gammaStop"]
 
-    # pyvista plot
 
+    # pyvista plot
     plotter = pv.Plotter(window_size=(800, 600))
 
     # Plot particle tracks
     print("Plotting particle tracks...")
+
+    track_actors = {}
+
     for track in trackId:
         if track == 0:
             continue
 
         if pId[trackId == track] == 0:
             continue
-
+        
         vertices = tracks[str(track)].to_numpy()
         line = pv.PolyData(vertices)
         line.lines = np.array([[len(vertices), *range(len(vertices))]] )
 
-
         color, ls, alpha, lw = track_style(pId[trackId == track])
-        plotter.add_mesh(line, color=color, line_width=lw, point_size=0.1, opacity=alpha)
+            
+        actor = plotter.add_mesh(line, color=color, line_width=lw, point_size=0.1, opacity=alpha)
 
+        # Store actor by creatorProcess
+        process = creatorProcess[trackId == track][0]  # Get process name
+
+        if process not in track_actors:
+            track_actors[process] = []
+        track_actors[process].append(actor)
+
+    # Checkbox widget callback function
+    def toggle_tracks(process, flag):
+        for actor in track_actors[process]:
+            actor.SetVisibility(flag)
+        plotter.render()
+
+    # Create checkboxes for each creatorProcess
+    for i, process in enumerate(track_actors.keys()):
+        plotter.add_checkbox_button_widget(
+            lambda flag, p=process: toggle_tracks(p, flag), 
+            value=True, 
+            position=(10, 50 + i * 30),
+            size=20,
+            border_size=2
+        )
+        text_pos = (60, 50 + i * 30)  # Adjust position next to checkbox
+        plotter.add_text(process, position=text_pos, font_size=10, color="white")
+
+ 
     # Plot Cherenkov gamma tracks
-
     if plot_Chgamma: 
         print("Plotting gamma tracks...")
         for start, stop in zip(gammaStart, gammaStop):
-            if np.dot(stop - start, particleStop[trackId == primaryId]-particleStart[trackId == primaryId]) < 0:
-                continue
-
+            #if np.dot(stop - start, particleStop[trackId == primaryId]-particleStart[trackId == primaryId]) < 0:
+                #continue
             line = pv.Line(start, stop)
             line.lines = np.array([[2, 0, 1]])
             color, ls, alpha, lw = track_style(0)
@@ -190,24 +211,23 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
 
     # Add detector hits as points
     print("Adding detector hits as points...")
+   
     points = np.column_stack((hitx.to_numpy(), hity.to_numpy(), hitz.to_numpy()))
     point_cloud = pv.PolyData(points)
-    plotter.add_points(
-        point_cloud,
-        scalars=rescale_color(charge),
-        cmap="plasma",
-        point_size=10,
-        opacity=0.7,
-        render_points_as_spheres=True,
-    )
+    point_cloud['charge'] = rescale_color(charge)
+
+    # Create spheres at detector positions
+    sphere = pv.Sphere(radius=detector_geom['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
+    spheres = point_cloud.glyph(scale=False, geom=sphere, orient=False)
+
+    plotter.add_mesh(spheres, scalars='charge', cmap='plasma')  # Light detectors
 
 
     # draw detector
-
     print("Drawing detector...")
 
     cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius'], height=detector_geom['height'])
-    plotter.add_mesh(cylinder, color="black")
+    plotter.add_mesh(cylinder, color='black')
 
     for z in [-detector_geom['height']/2+10, detector_geom['height']/2-10]:
 
@@ -230,13 +250,7 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         # Plot the circle
         plotter.add_mesh(circle, color="grey", point_size=0.01, line_width=5, opacity=0.5)  # Add points
 
-
-    # Set the plotter's view bounds
-    #radius = 3  # Adjust this based on your detector geometry
-    #plotter.set_scale(xscale=radius, yscale=radius, zscale=radius)
-
     # Set camera position
-
     print("Setting camera...")
 
     # Set camera position
@@ -280,11 +294,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-tf", "--track_file", type=str, default="tracks",
-        help="Name of the file to store the tracks data (default: 'tracks')."
-    )
-
-    parser.add_argument(
         "-g", "--plot_Chgamma", action="store_true",
         help="Plot Cherenkov gamma tracks."
     )
@@ -293,9 +302,8 @@ if __name__ == "__main__":
     root_file = args.file
     tree_name = args.tree
     event_index = args.index
-    track_file = args.track_file
 
-    data = load_data(root_file, tree_name, event_index, track_file)
+    data = load_data(root_file, tree_name, event_index)
 
     plot_display(data, detector_geom['SK'], args.plot_Chgamma)
 

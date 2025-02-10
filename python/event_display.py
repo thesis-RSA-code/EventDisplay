@@ -8,7 +8,6 @@ import matplotlib.colors as mcolors
 import tkinter as tk
 import awkward as ak
 
-from scipy.stats import rankdata
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable

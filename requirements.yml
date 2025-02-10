@@ -8,7 +8,6 @@ dependencies:
   - awkward
   - uproot
   - pyvista
-  - cloudpickle  # `pickle` is part of Python's standard library, but `cloudpickle` extends it for distributed tasks
   - pip
   - pip:
       - vtk

@@ -14,20 +14,6 @@ in your terminal, then activate it with
 conda activate event_display
 ```
 
-# Run the program
-
-The program minimally requires the location of the root file as well as the name of the experiment. All arguments, including optional arguments, are passed to the code through a parser. To display all of the events simulated in SK contained in events.root, simply type  
-
-```bash 
-python3 event_display.py -f 'path/to/events.root' -e 'SK' -d 'all' -tk
-```
-
-You can browse all of the possible options by running
-
-```bash 
-python3 event_display.py -h
-```
-
 Note that the code opens an interactive Tkinter window or a matplotlib window, so X11 forwarding should be enabled when executing the program remotely through a ssh connection. When connecting with a terminal, this is done with
 
 ```bash
@@ -45,14 +31,33 @@ Host hostname
     ForwardX11Trusted yes
 ```
 
+Examples on how to execute the different programs are located in `scripts/`
+
+# Event Display
+
+The program `event_display.py` shows a 2D projection of Cherenkov events in the tank. One can either display a single event in a matplotlib window, or browse through several events in a tkinter interactive window. Details on how to use the program can be accessed by typing
+
+```bash 
+python3 event_display.py -h
+```
+
 Enjoy !
 
 ![30_mu-_1000MeV_GPS_6-1](https://github.com/user-attachments/assets/0116d31e-ea78-4380-903f-adfda5be5e45)
 
 
+# 3D Display
+
+The program `3D_display.py` shows a 3D view of the event inside the detector using pyvista. Once again, one can browse through the different options with 
+
+```bash 
+python3 3D_display.py -h
+```
+
+
 # Showering Display
 
-The program `showering_display.py` shows a 3D view of the event inside the detector using pyvista. It displays the tracks of the particles that were tracked in the WCSim simulation. The input root file has to be the output of `WCSimRoot_to_root_all_tracks`.
+The program `showering_display.py` also shows a 3D view of the event inside the detector using pyvista. However, it is meant to display the tracks of the particles that were tracked in the WCSim simulation. The input root file has to be the output of `WCSimRoot_to_root_all_tracks`. The program also includes checkbox widgets to only display particles which were created by specific processes (pair annihilation, Bremsstrahlung, photon conversion etc...).
 
 
 # TO DO
