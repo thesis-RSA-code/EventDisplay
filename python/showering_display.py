@@ -42,6 +42,9 @@ def track_style(pid):
         lw = 0.2
     else:
         color='black'
+        ls = '-'
+        alpha = 1
+        lw = 2
 
     return color, ls, alpha, lw
 
