@@ -5,3 +5,5 @@ plots/
 outputs/*
 launch_display.sh
 *.pkl
+graph_examples/
+root_output_4events.root

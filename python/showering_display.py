@@ -79,6 +79,7 @@ def load_data(root_file, tree_name, event_index) :
     event_tree = up.open(root_file)[tree_name]
 
     # event data
+    energy = event_tree['energy'].array()[event_index]
     hitx = event_tree['hitx'].array()[event_index]
     hity = event_tree['hity'].array()[event_index]
     hitz = event_tree['hitz'].array()[event_index]
@@ -114,6 +115,7 @@ def load_data(root_file, tree_name, event_index) :
     tracks = compute_tracks(trackId, parentId, particleStart, particleStop)
     
     data = {
+    "energy": energy,
     "trackId": trackId,
     "pId": pId,
     "particleStart": particleStart,
@@ -135,6 +137,7 @@ def load_data(root_file, tree_name, event_index) :
 
 def plot_display(data, detector_geom, plot_Chgamma=False) :
 
+    energy = data["energy"]
     hitx = data["hitx"]
     hity = data["hity"]
     hitz = data["hitz"]
@@ -263,6 +266,7 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
 
+    plotter.add_text(f"Energy={energy}MeV", position='upper_edge', font_size=10, color="white")
     plotter.camera.view_angle = 90  # Set FOV to 90 degrees for a wide angle
 
     # Add axes labels
