@@ -23,9 +23,9 @@ plt.rcParams['savefig.format'] = 'pdf'
 detector_geom = {
   'SK': {'height': 3620.0, 'cylinder_radius': 3368.15/2, 'PMT_radius': 25.4}, 
   'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 
-  'WCTE': {'height': 271.4235, 'cylinder_radius': 307.5926/2, 'PMT_radius': 4.0}
+  'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0},
+  'DEMO': {'height': 558.92 * 2 , 'cylinder_radius': 558.92, 'PMT_radius': 25.4}
 }
-
 
 # Utility functions =======================================================================================
 
@@ -117,7 +117,7 @@ def project2d(X, Y, Z, detector_geom, experiment) : # project 3D PMT positions o
   Xproj = ak.zeros_like(X)
   Yproj = ak.zeros_like(Y)
 
-  if experiment == 'WCTE' : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
+  if experiment in ['WCTE', 'DEMO'] : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
     # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
     eps_top = 50
     eps_bottom = 50
@@ -247,9 +247,9 @@ def show_event_display_plt(file_path, tree_name, detector_geom, experiment, even
     ax.set_ylabel(r'$z$ (cm)')
 
     # draw detector
-    ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=True, color='black'))
-    ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=True, color='black'))
-    ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=True, color='black'))
+    ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=False))
+    ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
+    ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
 
     #ax.set_facecolor('grey')
 
@@ -449,8 +449,8 @@ if __name__ == "__main__":
 
   # Define mandatory arguments
   parser.add_argument(
-      "-e", "--experiment", type=str, choices=["SK", "HK", "WCTE"],
-      required=True, help="Experiment type ('SK', 'HK', or 'WCTE')."
+      "-e", "--experiment", type=str, choices=detector_geom.keys(),
+      required=True, help=f"Experiment type {detector_geom.keys()}."
   )
   parser.add_argument(
       "-f", "--file", type=str, required=True,
@@ -521,7 +521,7 @@ if __name__ == "__main__":
 
     tk_display = False
     if args.save_path != "" :
-      print(f"Save Path: {args.save_path + args.save_file}")
+      print(f"Save Path: {args.save_path + '/' + args.save_file}")
 
     #print(f"Color Scheme: {args.color}")
 
