@@ -1,59 +1,37 @@
+
 import argparse
 
 import numpy as np
-import awkward as ak
 import uproot as up
+
 import pyvista as pv
-import pickle as pck
-
-#np.bool = bool
+import matplotlib.pyplot as plt
 
 
-def track_style(pid):
-    if pid == 11:
-        color='blue'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == -11:
-        color='red'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == 13:
-        color='green'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == -13:
-        color='purple'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == 22:
-        color='orange'
-        ls = '--'
-        alpha = 0.3
-        lw = 0.5
-    elif pid == 0:
-        color='gold'
-        ls = '-'
-        alpha=0.05
-        lw = 0.2
-    else:
-        color='black'
 
-    return color, ls, alpha, lw
+from src.utils.global_viz_utils import rescale_color, track_style, DETECTOR_GEOM
 
 
-def rescale_color(x) : # rescale colors with sigmoid to have better color range
-  if len(x) > 1 :
-    return 1 / (1 + np.exp(-(x-np.median(x))/np.std(x))) # sigmoid
-    #return 1 / (1 + np.exp(-x)/np.std(x)) # sigmoid
-  return x
+def debug_3D_display(events_root, event_index, experiment) : 
+    r"""
+    Simple 3D plot of a given event, just to check if everything is in order
+    """  
+
+    hitx = events_root['hitx'].array()
+    hity = events_root['hity'].array()
+    hitz = events_root['hitz'].array()
+    charge = events_root['charge'].array()
+
+    #PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=1, c=rescale_color(charge[event_index]), cmap='plasma')
+    plt.show()
 
 
-def plot_3D_display(tree, event_index, detector_geom) :
+
+def plot_3D_display(tree, event_index) :
 
     hitx = tree["hitx"].array()[event_index]
     hity = tree["hity"].array()[event_index]
@@ -72,7 +50,7 @@ def plot_3D_display(tree, event_index, detector_geom) :
     point_cloud['charge'] = rescale_color(charge)
 
     # Create spheres at detector positions
-    sphere = pv.Sphere(radius=detector_geom['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
+    sphere = pv.Sphere(radius=DETECTOR_GEOM['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
     spheres = point_cloud.glyph(scale=False, geom=sphere, orient=False)
 
     plotter.add_mesh(spheres, scalars='charge', cmap='plasma')  # Light detectors
@@ -81,13 +59,13 @@ def plot_3D_display(tree, event_index, detector_geom) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius'], height=detector_geom['height'])
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM['cylinder_radius'], height=DETECTOR_GEOM['height'])
     plotter.add_mesh(cylinder, color='black')
 
-    for z in [-detector_geom['height']/2+10, detector_geom['height']/2-10]:
+    for z in [-DETECTOR_GEOM['height'] / 2 + 10, DETECTOR_GEOM['height']/2-10]:
 
         # Parameters for the circle
-        radius = detector_geom['cylinder_radius'] - 10 # Radius of the circle
+        radius = DETECTOR_GEOM['cylinder_radius'] - 10 # Radius of the circle
         center = (0, 0, z)  # Center of the circle
         resolution = 100    # Number of points around the circle
 
@@ -108,7 +86,6 @@ def plot_3D_display(tree, event_index, detector_geom) :
     # Set camera position
     print("Setting camera...")
 
-    # Set camera position
     plotter.camera_position = [
         vertex,   # Camera position (x, y, z)
         (np.mean(hitx), np.mean(hity), np.mean(hitz)),   # Focal point (center of the view)
@@ -126,8 +103,6 @@ def plot_3D_display(tree, event_index, detector_geom) :
 
 if __name__ == "__main__":
 
-
-    detector_geom = {'SK': {'height': 3620.0, 'cylinder_radius': 3368.15/2, 'PMT_radius': 25.4}, 'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0}}
 
     parser = argparse.ArgumentParser(description="Access events root file and display showering tracks.")
 
@@ -151,6 +126,11 @@ if __name__ == "__main__":
         help="Index of the event to display (default: 0)."
     )
 
+    parser.add_argument(
+        "--debug", type=bool, default=False,
+        help="Print a fast 3D display. (Default : False)"
+    )
+
 
     args = parser.parse_args()
     root_file = args.file
@@ -159,11 +139,12 @@ if __name__ == "__main__":
     event_index = args.index
 
     # loading data
-
     print("Loading data...")
     file = up.open(root_file)
     tree = file[tree_name]
 
-    plot_3D_display(tree, event_index, detector_geom[experiment])
+    if args.debug:
+        debug_3D_display(tree, event_index)
+    else : plot_3D_display(tree, event_index)
 
 
