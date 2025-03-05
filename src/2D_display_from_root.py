@@ -2,9 +2,7 @@ import os
 import sys 
 import argparse
 
-import numpy as np
 import matplotlib.pyplot as plt
-import awkward as ak
 
 
 # Custom imports
@@ -14,8 +12,6 @@ from displays.tk_2d_display import tk_2d_display
 
 from utils.global_viz_utils import prepare_data
 from utils.detector_geometries import DETECTOR_GEOM
-
-
 
 
 #matplotlib.use('Agg')
@@ -94,7 +90,7 @@ if __name__ == "__main__":
       
   elif ":" in args.display: # Parse range of events, e.g., "3:10"
       start, end = map(int, args.display.split(":"))
-      events_to_display = (start, end)
+      events_to_display = list(range(start, end + 1))
   elif "|" in args.display:
       # Parse a list of events, e.g. "3|49|107"
       events_to_display = [int(index) for index in args.display.split("|")]

@@ -9,10 +9,14 @@ import matplotlib.pyplot as plt
 
 
 
-from src.utils.global_viz_utils import rescale_color, track_style, DETECTOR_GEOM
+from utils.global_viz_utils import rescale_color
+from utils.detector_geometries import DETECTOR_GEOM
 
 
-def debug_3D_display(events_root, event_index, experiment) : 
+
+
+
+def simple_display(events_root, event_index) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order
     """  
@@ -22,7 +26,7 @@ def debug_3D_display(events_root, event_index, experiment) :
     hitz = events_root['hitz'].array()
     charge = events_root['charge'].array()
 
-    #PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
+    #PMT_radius = DETECTOR_GEOM[experiment][experiment]['PMT_radius']
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -31,13 +35,19 @@ def debug_3D_display(events_root, event_index, experiment) :
 
 
 
-def plot_3D_display(tree, event_index) :
+def immersive_display(tree, event_index, experiment) :
 
     hitx = tree["hitx"].array()[event_index]
     hity = tree["hity"].array()[event_index]
     hitz = tree["hitz"].array()[event_index]
     charge = tree["charge"].array()[event_index]
     vertex = tree["vertex"].array()[event_index]
+
+    annotations = []
+    for var in ['towall', 'dwall', 'energy']:
+        if var in tree.keys():
+            value = tree[var].array()[event_index]
+            annotations.append(f"{var}: {value:.3f}")
 
     # pyvista plot
     plotter = pv.Plotter(window_size=(800, 600))
@@ -50,7 +60,7 @@ def plot_3D_display(tree, event_index) :
     point_cloud['charge'] = rescale_color(charge)
 
     # Create spheres at detector positions
-    sphere = pv.Sphere(radius=DETECTOR_GEOM['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
+    sphere = pv.Sphere(radius=DETECTOR_GEOM[experiment]['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
     spheres = point_cloud.glyph(scale=False, geom=sphere, orient=False)
 
     plotter.add_mesh(spheres, scalars='charge', cmap='plasma')  # Light detectors
@@ -59,13 +69,13 @@ def plot_3D_display(tree, event_index) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM['cylinder_radius'], height=DETECTOR_GEOM['height'])
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM[experiment]['cylinder_radius'], height=DETECTOR_GEOM[experiment]['height'])
     plotter.add_mesh(cylinder, color='black')
 
-    for z in [-DETECTOR_GEOM['height'] / 2 + 10, DETECTOR_GEOM['height']/2-10]:
+    for z in [-DETECTOR_GEOM[experiment]['height'] / 2 + 10, DETECTOR_GEOM[experiment]['height']/2-10]:
 
         # Parameters for the circle
-        radius = DETECTOR_GEOM['cylinder_radius'] - 10 # Radius of the circle
+        radius = DETECTOR_GEOM[experiment]['cylinder_radius'] - 10 # Radius of the circle
         center = (0, 0, z)  # Center of the circle
         resolution = 100    # Number of points around the circle
 
@@ -93,6 +103,12 @@ def plot_3D_display(tree, event_index) :
     ]
 
     plotter.camera.view_angle = 90  # Set FOV to 90 degrees for a wide angle
+
+    # Add the extra event information as text (if available)
+    if annotations:
+        annotation_text = "\n".join(annotations)
+        plotter.add_text(annotation_text, position="upper_left", font_size=12, color="white")
+
 
     # Add axes labels
     plotter.remove_scalar_bar()
@@ -127,8 +143,8 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--debug", type=bool, default=False,
-        help="Print a fast 3D display. (Default : False)"
+        "--kind", type=str, default='simple',
+        help="Define the kind of 3D display ( simple / immersive). (Default : simple)"
     )
 
 
@@ -143,8 +159,9 @@ if __name__ == "__main__":
     file = up.open(root_file)
     tree = file[tree_name]
 
-    if args.debug:
-        debug_3D_display(tree, event_index)
-    else : plot_3D_display(tree, event_index)
+    if args.kind == 'simple':
+        simple_display(tree, event_index)
+    else : 
+        immersive_display(tree, event_index, experiment)
 
 
