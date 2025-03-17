@@ -72,7 +72,7 @@ def compute_tracks(trackId, parentId, particleStart, particleStop) :
     return tracks
 
 
-def load_data(root_file, tree_name, event_index) :
+def load_data(root_file, tree_name, event_index, rotate=False) :
 
     print("Loading event and track data...")
 
@@ -86,13 +86,43 @@ def load_data(root_file, tree_name, event_index) :
     charge = event_tree['charge'].array()[event_index]
 
     # tracks data
-    particleStart = event_tree['particleStart'].array()[event_index]
-    particleStop = event_tree['particleStop'].array()[event_index]
+    particleStart = event_tree['particleStart'].array(library='np')[event_index]
+    particleStop = event_tree['particleStop'].array(library='np')[event_index]
     pId = event_tree['pID'].array()[event_index]
     trackId = event_tree['trackId'].array()[event_index]
     parentId = event_tree['parentId'].array()[event_index]
     flag = event_tree['flag'].array()[event_index]
     creatorProcess = event_tree['CreatorProcess'].array()[event_index]
+
+
+    if rotate : # rotate all positions to account for WCTE rotation in WCSim
+
+        print("WCTE rotation...")
+
+        hitx_r = hitx
+        hity_r = -hitz
+        hitz_r = hity
+
+
+        particleStart_r = np.zeros(particleStart.shape)
+
+        particleStart_r[:,0] = particleStart[:,0]
+        particleStart_r[:,1] = -particleStart[:,2]
+        particleStart_r[:,2] = particleStart[:,1]
+
+        particleStop_r = np.zeros(particleStop.shape)
+
+        particleStop_r[:,0] = particleStop[:,0]
+        particleStop_r[:,1] = -particleStop[:,2]
+        particleStop_r[:,2] = particleStop[:,1]
+
+        hitx = hitx_r
+        hity = hity_r
+        hitz = hitz_r
+
+        particleStart = particleStart_r
+        particleStop = particleStop_r
+
 
     # select primary particle (flag == 0 and parentId == 0)
     primaryId = trackId[(flag == 0) & (parentId == 0)][0]
@@ -232,13 +262,13 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius'], height=detector_geom['height'])
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius']-25, height=detector_geom['height']-55)
     plotter.add_mesh(cylinder, color='black')
 
-    for z in [-detector_geom['height']/2+10, detector_geom['height']/2-10]:
+    for z in [-detector_geom['height']/2+57/2, detector_geom['height']/2-57/2]:
 
         # Parameters for the circle
-        radius = detector_geom['cylinder_radius'] - 10 # Radius of the circle
+        radius = detector_geom['cylinder_radius'] - 25 # Radius of the circle
         center = (0, 0, z)  # Center of the circle
         resolution = 100    # Number of points around the circle
 
@@ -261,7 +291,7 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
 
     # Set camera position
     plotter.camera_position = [
-        particleStart[trackId == primaryId][0]-ak.Array([200, 0, -200]),   # Camera position (x, y, z)
+        particleStart[trackId == primaryId][0]-ak.Array([20, 0, -20]),   # Camera position (x, y, z)
         particleStop[trackId == primaryId][0],   # Focal point (center of the view)
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
@@ -301,17 +331,28 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-e", "--experiment", type=str, default="SK",
+        help="Name of the experiment (default: 'SK'. Possibilities are SK, HK, WCTE)."
+    )
+
+    parser.add_argument(
         "-g", "--plot_Chgamma", action="store_true",
         help="Plot Cherenkov gamma tracks."
+    )
+
+    parser.add_argument(
+        "-r", "--rotate", action="store_true",
+        help="Whether to rotate the detector or not (useful for WCTE)."
     )
 
     args = parser.parse_args()
     root_file = args.file
     tree_name = args.tree
     event_index = args.index
+    experiment = args.experiment
 
-    data = load_data(root_file, tree_name, event_index)
+    data = load_data(root_file, tree_name, event_index, rotate=args.rotate)
 
-    plot_display(data, detector_geom['SK'], args.plot_Chgamma)
+    plot_display(data, detector_geom[experiment], plot_Chgamma=args.plot_Chgamma)
 
 
