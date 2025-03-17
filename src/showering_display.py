@@ -8,45 +8,7 @@ import pickle as pck
 
 #np.bool = bool
 
-
-def track_style(pid):
-    if pid == 11:
-        color='blue'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == -11:
-        color='red'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == 13:
-        color='green'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == -13:
-        color='purple'
-        ls = '-'
-        alpha = 1
-        lw = 2
-    elif pid == 22:
-        color='orange'
-        ls = '--'
-        alpha = 0.3
-        lw = 0.5
-    elif pid == 0:
-        color='gold'
-        ls = '-'
-        alpha=0.05
-        lw = 0.2
-    else:
-        color='black'
-        ls = '-'
-        alpha = 1
-        lw = 2
-
-    return color, ls, alpha, lw
+from utils.detector_geometries import track_style
 
 
 def rescale_color(x) : # rescale colors with sigmoid to have better color range
