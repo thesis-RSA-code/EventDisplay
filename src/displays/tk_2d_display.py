@@ -13,7 +13,10 @@ from utils.global_viz_utils import rescale_color, rescale_color_inv, compute_PMT
 
 # plot event display with tkinter animation
 def tk_2d_display(events_dict, event_indices, experiment):
-
+        
+    if event_indices[0] == event_indices[-1] : # only one event to display
+      event_indices = [event_indices[0]]
+    
     print('Tkinter GUI =========================================================================================')
 
     PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
