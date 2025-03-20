@@ -1,5 +1,5 @@
 #!/bin/bash
 
-input_file=/home/mathieu-ferey/Documents/These/Codes/Data/WCTE_all_tracks/WCSim_v1.12.18_nuPRISMBeamTest_16cShort_mPMT/e-/500MeV/1/root_output_1events.root
+input_file=/home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay/showering_examples/1electron_SK.root
 
-python3 /home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay/python/showering_display.py -f $input_file -i 0 -e "WCTE" -r
+python3 /home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay/src/showering_display.py -f $input_file -i 0 -e "SK"

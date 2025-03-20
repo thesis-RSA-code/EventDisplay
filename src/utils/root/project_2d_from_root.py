@@ -10,8 +10,8 @@ from utils.detector_geometries import DETECTOR_GEOM
 def project2d(X, Y, Z, experiment) : # project 3D PMT positions of an event to 2D unfolded cylinder
 
   cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
-  zMax = DETECTOR_GEOM[experiment]['height']/2
-  zMin = -DETECTOR_GEOM[experiment]['height']/2
+  # zMax = DETECTOR_GEOM[experiment]['height']/2
+  # zMin = -DETECTOR_GEOM[experiment]['height']/2
 
   Xproj = ak.zeros_like(X)
   Yproj = ak.zeros_like(Y)
@@ -39,6 +39,9 @@ def project2d(X, Y, Z, experiment) : # project 3D PMT positions of an event to 2
   else :
     eps_top = 0.01
     eps_bottom = 0.01
+
+  zMax = np.max(Z)
+  zMin = np.min(Z)
 
   top_cap_mask = Z > zMax - eps_top
   bottom_cap_mask = Z < zMin + eps_bottom
