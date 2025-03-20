@@ -13,7 +13,7 @@ def events_index_bounds(events_to_display, n_events):
       * Otherwise, returns (False, indices) so that events are fetched one by one.
   """
   if events_to_display == 'all':
-    return True, (0, n_events)
+    return True, [i for i in range(n_events)]
   
 
   elif isinstance(events_to_display, int): # one event display
@@ -22,7 +22,7 @@ def events_index_bounds(events_to_display, n_events):
       print('Error: event index out of bounds. Displaying first event instead.')
       return True, (0, 1)
 
-    return True, (events_to_display, events_to_display + 1)
+    return True, (events_to_display, events_to_display)
 
   elif isinstance(events_to_display, tuple):
     start, stop = events_to_display
@@ -103,6 +103,5 @@ def load_data_from_root(file_path, tree_name, events_to_display):
     #nice_litteral = {'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': }
     litteral = {'label': key, 'unit': unit, 'values': all_data[key]}
     events_dict['add_info'].append(litteral)
-
 
   return events_dict, len(events_dict['hitx']), bounds

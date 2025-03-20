@@ -224,7 +224,9 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius']-25, height=detector_geom['height']-55)
+    #cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius']-25, height=detector_geom['height']-55) # fine-tuned for WCTE
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius'], height=detector_geom['height']) # fine-tuned for SK
+
     plotter.add_mesh(cylinder, color='black')
 
     for z in [-detector_geom['height']/2+57/2, detector_geom['height']/2-57/2]:
