@@ -60,9 +60,9 @@ def plt_only_display(
   ax.set_ylabel(r'$z$ (cm)')
 
   # draw detector
-  ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=False))
-  ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
-  ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
+  ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=True, color='black'))
+  ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=True, color='black'))
+  ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=True, color='black'))
 
   #ax.set_facecolor('grey')
 
@@ -91,6 +91,7 @@ def plt_only_display(
       save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + f".{plt.rcParams['savefig.format']}"
 
     print(f"Save Path: {save_path + '/' + save_file}")
-    plt.savefig(save_path + save_file, bbox_inches="tight", transparent=True, dpi=300)
+    plt.savefig(save_path + '/' + save_file, bbox_inches="tight", transparent=True, dpi=300)
+    print('Saved!')
 
   if show : plt.show()

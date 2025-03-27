@@ -9,28 +9,87 @@ import matplotlib.pyplot as plt
 
 
 
-from utils.global_viz_utils import rescale_color
+from utils.global_viz_utils import rescale_color, compute_PMT_marker_size
 from utils.detector_geometries import DETECTOR_GEOM
 
 
 
 
 
-def simple_display(events_root, event_index) : 
+def simple_display(events_root, event_index, experiment, plot_vertex=False, plot_dir=False, outline=False) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order
     """  
+    print('================================ Simple 3D display ===================================')
 
     hitx = events_root['hitx'].array()
     hity = events_root['hity'].array()
     hitz = events_root['hitz'].array()
     charge = events_root['charge'].array()
 
-    #PMT_radius = DETECTOR_GEOM[experiment][experiment]['PMT_radius']
+    cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
+    zMax = DETECTOR_GEOM[experiment]['height']/2
+    zMin = -DETECTOR_GEOM[experiment]['height']/2
 
-    fig = plt.figure()
+
+    fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=1, c=rescale_color(charge[event_index]), cmap='plasma')
+
+    if experiment == "WCTE":
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(zMin-50, zMax+50)
+
+    else:
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(zMin-50, zMax+50)
+
+
+
+    PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
+    PMT_plot_size = compute_PMT_marker_size(PMT_radius, fig, ax)
+
+    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=PMT_plot_size, c=rescale_color(charge[event_index]), cmap='plasma')
+
+    if plot_vertex:
+        vertex = events_root['vertex'].array()
+        ax.scatter(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], c='r', marker='o', s=100)
+
+    if plot_dir:
+        direction = events_root['particleDir'].array()
+        ax.quiver(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], direction[event_index][0], direction[event_index][1], direction[event_index][2], length=100, normalize=True)
+
+    # draw cylinder limits
+    if outline:
+        # Create a mesh for the cylinder
+        theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+        z = np.linspace(zMin, zMax, 20)      # Height points
+        Theta, Z = np.meshgrid(theta, z)       # Meshgrid for cylinder surface
+
+        # Convert polar coordinates to Cartesian for plotting
+        X = cylinder_radius * np.cos(Theta)
+        Y = cylinder_radius * np.sin(Theta)
+
+        # Plot cylinder surface
+        ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+        # Top and bottom circular caps
+        theta_cap = np.linspace(0, 2 * np.pi, 20)
+        x_cap = cylinder_radius * np.cos(theta_cap)
+        y_cap = cylinder_radius * np.sin(theta_cap)
+
+        ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMax), color='lightblue', alpha=0.6)
+        ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMin), color='lightblue', alpha=0.6)
+
+
+    ax.set_xlabel(r'$x$ (cm)')
+    ax.set_ylabel(r'$y$ (cm)')
+    ax.set_zlabel(r'$z$ (cm)')
+    ax.set_title(experiment + ' Event Display')
+
+    ax.set_aspect('equal')
+
     plt.show()
 
 
@@ -147,6 +206,21 @@ if __name__ == "__main__":
         help="Define the kind of 3D display ( simple / immersive). (Default : simple)"
     )
 
+    parser.add_argument(
+        "-v", "--vertex", action="store_true",
+        help="Plot the vertex of the event. Only for simple display."
+    )
+
+    parser.add_argument(
+        "-d", "--direction", action="store_true",
+        help="Plot the particule direction of the event. Only for simple display."
+    )
+
+    parser.add_argument(
+        "--outline", action="store_true",
+        help="Plot the detector outline. Only for simple display."
+    )
+
 
     args = parser.parse_args()
     root_file = args.file
@@ -160,7 +234,7 @@ if __name__ == "__main__":
     tree = file[tree_name]
 
     if args.kind == 'simple':
-        simple_display(tree, event_index)
+        simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_dir=args.direction, outline=args.outline)
     else : 
         immersive_display(tree, event_index, experiment)
 

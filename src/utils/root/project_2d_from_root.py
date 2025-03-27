@@ -18,13 +18,13 @@ def project2d(X, Y, Z, experiment) : # project 3D PMT positions of an event to 2
 
   if experiment in ['WCTE', 'DEMO'] : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
     # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
-    eps_top = 50
-    eps_bottom = 50
+    eps_top = 10
+    eps_bottom = 10
     
     # WCTE is rotated in WCSim to have beam on the z axis, rotate it back to have cylinder axis on z axis like SK and HK, then rotate a tiny bit around z axis so as not to cut a column of PMTs in half (but also rotate the top and bottom caps though...)
     print('Rotating WCTE events...')
     thetax = np.pi/2
-    thetaz = 4.53
+    thetaz = 0
     
     # rotate around x axis
     X_Rx = X

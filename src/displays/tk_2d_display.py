@@ -16,6 +16,7 @@ def tk_2d_display(events_dict, event_indices, experiment):
         
     if event_indices[0] == event_indices[-1] : # only one event to display
       event_indices = [event_indices[0]]
+
     
     print('Tkinter GUI =========================================================================================')
 
@@ -23,6 +24,8 @@ def tk_2d_display(events_dict, event_indices, experiment):
     cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
     zMax = DETECTOR_GEOM[experiment]['height']/2
     zMin = -DETECTOR_GEOM[experiment]['height']/2
+
+    print(cylinder_radius, zMax, zMin)
 
     # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
     if experiment == 'WCTE' : 
@@ -38,8 +41,12 @@ def tk_2d_display(events_dict, event_indices, experiment):
       time = times[event_index]
       time = np.sort(time)
 
+      if len(time) == 0 :
+        print(f'Warning: event {event_index} appears to be empty.')
+        time = [0, 1]
+
       wt.config(from_=time[0], to=time[-1], resolution=(time[-1]-time[0])/100000)
-      wt.set(times[event_index][-1])
+      wt.set(time[-1])
 
 
     fig, ax = plt.subplots(figsize = (6,6))
