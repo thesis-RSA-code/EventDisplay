@@ -1,6 +1,7 @@
 #!/bin/bash
 
-input_file=/home/mathieu-ferey/Documents/These/Codes/Data/SK/SK_e-_200-1000MeV_1000_1.root
-experiment='SK'
+event_display_folder=/home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay
+input_file=/home/mathieu-ferey/Documents/These/Codes/Data/WCTE/WCTE_uni_iso_100_e-.root
+experiment='WCTE'
 
-python3 /home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay/python/3D_display.py -f $input_file -e $experiment -i 678
+python3 $event_display_folder/src/3D_display_from_root.py -f $input_file -e $experiment -i 33 --kind "simple" -v -d --outline

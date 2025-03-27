@@ -7,18 +7,19 @@
 
 event_display_folder=/home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay
 
-root_file_path=/home/mathieu-ferey/Documents/These/Codes/Data/HK_realistic/root_output_50events_mandatory_cuts_extra_data.root
+root_file_path=/home/mathieu-ferey/Documents/These/Codes/Data/WCTE/WCTE_uni_iso_100_e-.root
 
 
 #root_file_path=/home/amaterasu/work/hk_fd_realistic/root_datasets/dr42_trth70_dw2k_mu1k_alltr_folder2.root
 
-save_path=/home/amaterasu/work/EventDisplay/playground/
-save_type=pdf
+save_path=/home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay/plots
+save_type=png
+save_file=SK_pi0
 
 #events='50|15000|25000|30000'
 events='all'
 tree_name='pure_root_tree'
-detector_type='HK_realistic'
+detector_type='WCTE'
 
 
 #####
