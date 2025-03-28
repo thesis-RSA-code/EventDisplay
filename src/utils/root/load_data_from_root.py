@@ -73,8 +73,8 @@ def load_data_from_root(file_path, tree_name, events_to_display):
     n_events = tree.num_entries
       
     data_keys = ['hitx', 'hity', 'hitz', 'charge', 'time']
-    extra_data_keys = ['energy'] + [var for var in ('dwall', 'towall') if var in tree.keys()]
-    extra_data_units = ['MeV'] + ['cm' for _ in ('dwall', 'towall')]
+    extra_data_keys = ['energy'] + [var for var in ('dwall', 'towall') if var in tree.keys()] + ['n_hits']
+    extra_data_units = ['MeV'] + ['cm' for var in ('dwall', 'towall') if var in tree.keys()] + ['']
 
     all_keys = data_keys + extra_data_keys
 

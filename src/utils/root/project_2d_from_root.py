@@ -16,7 +16,7 @@ def project2d(X, Y, Z, experiment) : # project 3D PMT positions of an event to 2
   Xproj = ak.zeros_like(X)
   Yproj = ak.zeros_like(Y)
 
-  if experiment in ['WCTE', 'DEMO'] : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
+  if experiment in ['WCTE_r', 'DEMO'] : # WCTE bottom and top cap no symmetrical! top PMTs are further away from the last row of cylinder PMTs than the bottom PMTs, and beware of spherical structure of mPMTs
     # values adjusted by hand so as to correctly identify the top and bottom PMTs, maybe get info from WCSim in PMT id or something
     eps_top = 10
     eps_bottom = 10
@@ -37,8 +37,12 @@ def project2d(X, Y, Z, experiment) : # project 3D PMT positions of an event to 2
     Z = Z_Rx
 
   else :
-    eps_top = 0.01
-    eps_bottom = 0.01
+    if experiment == "WCTE" :
+      eps_top = 10
+      eps_bottom = 10
+    else :
+      eps_top = 0.01
+      eps_bottom = 0.01
 
   zMax = np.max(Z)
   zMin = np.min(Z)

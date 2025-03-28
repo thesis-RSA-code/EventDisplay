@@ -7,7 +7,7 @@
 
 event_display_folder=/home/mathieu-ferey/Documents/These/Codes/CAVERNS/EventDisplay
 
-root_file_path=/home/mathieu-ferey/Documents/These/Codes/Data/WCTE/WCTE_uni_iso_100_e-.root
+root_file_path=/home/mathieu-ferey/Documents/These/Codes/Data/WCTE/WCTE_uni_iso_100_mu-_fid_nohitthres_manda_cuts.root
 
 
 #root_file_path=/home/amaterasu/work/hk_fd_realistic/root_datasets/dr42_trth70_dw2k_mu1k_alltr_folder2.root

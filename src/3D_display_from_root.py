@@ -62,6 +62,109 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
     # draw cylinder limits
     if outline:
+        if experiment == "WCTE":
+            theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+            y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
+            Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
+
+            # Convert polar coordinates to Cartesian for plotting
+            X = cylinder_radius * np.cos(Theta)
+            Z = cylinder_radius * np.sin(Theta)
+
+
+            # Plot cylinder surface
+            ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+            # Top and bottom circular caps
+            radius = np.linspace(0, cylinder_radius, 20)
+            Theta_cap, Radius = np.meshgrid(theta, radius)
+            X_cap = Radius * np.cos(Theta_cap)
+            Z_cap = Radius * np.sin(Theta_cap)
+
+            ax.plot_surface(X_cap, np.full_like(X_cap, zMax), Z_cap, color='lightblue', alpha=0.6)
+            ax.plot_surface(X_cap, np.full_like(X_cap, zMin), Z_cap, color='lightblue', alpha=0.6)
+
+        else:
+            # Create a mesh for the cylinder
+            theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+            z = np.linspace(zMin, zMax, 20)      # Height points
+            Theta, Z = np.meshgrid(theta, z)       # Meshgrid for cylinder surface
+
+            # Convert polar coordinates to Cartesian for plotting
+            X = cylinder_radius * np.cos(Theta)
+            Y = cylinder_radius * np.sin(Theta)
+
+            # Plot cylinder surface
+            ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+            # Top and bottom circular caps
+            theta_cap = np.linspace(0, 2 * np.pi, 20)
+            x_cap = cylinder_radius * np.cos(theta_cap)
+            y_cap = cylinder_radius * np.sin(theta_cap)
+
+            ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMax), color='lightblue', alpha=0.6)
+            ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMin), color='lightblue', alpha=0.6)
+
+
+
+    ax.set_xlabel(r'$x$ (cm)')
+    ax.set_ylabel(r'$y$ (cm)')
+    ax.set_zlabel(r'$z$ (cm)')
+    ax.set_title(experiment + ' Event Display')
+
+    ax.set_aspect('equal')
+
+    plt.show()
+
+
+
+def draw_all_vertices(tree, experiment) :
+
+    vertices = tree["vertex"].array()
+
+    cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
+    zMax = DETECTOR_GEOM[experiment]['height']/2
+    zMin = -DETECTOR_GEOM[experiment]['height']/2
+
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    if experiment == "WCTE":
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(zMin-50, zMax+50)
+
+    else:
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(zMin-50, zMax+50)
+
+    # draw vertices
+    ax.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2], c='r', marker='o', s=100)
+
+    # draw cylinder
+    if experiment == "WCTE":
+        theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+        y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
+        Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
+        # Convert polar coordinates to Cartesian for plotting
+        X = cylinder_radius * np.cos(Theta)
+        Z = cylinder_radius * np.sin(Theta)
+
+        # Plot cylinder surface
+        ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+        # Top and bottom circular caps
+        radius = np.linspace(0, cylinder_radius, 20)
+        Theta_cap, Radius = np.meshgrid(theta, radius)
+        X_cap = Radius * np.cos(Theta_cap)
+        Z_cap = Radius * np.sin(Theta_cap)
+
+        ax.plot_surface(X_cap, np.full_like(X_cap, zMax), Z_cap, color='lightblue', alpha=0.6)
+        ax.plot_surface(X_cap, np.full_like(X_cap, zMin), Z_cap, color='lightblue', alpha=0.6)
+
+    else:
         # Create a mesh for the cylinder
         theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
         z = np.linspace(zMin, zMax, 20)      # Height points
@@ -82,16 +185,12 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
         ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMax), color='lightblue', alpha=0.6)
         ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMin), color='lightblue', alpha=0.6)
 
-
     ax.set_xlabel(r'$x$ (cm)')
     ax.set_ylabel(r'$y$ (cm)')
     ax.set_zlabel(r'$z$ (cm)')
-    ax.set_title(experiment + ' Event Display')
 
     ax.set_aspect('equal')
-
     plt.show()
-
 
 
 def immersive_display(tree, event_index, experiment) :
@@ -235,7 +334,12 @@ if __name__ == "__main__":
 
     if args.kind == 'simple':
         simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_dir=args.direction, outline=args.outline)
-    else : 
+    elif args.kind == 'immersive' : 
         immersive_display(tree, event_index, experiment)
+    elif args.kind == 'all vertices' :
+        draw_all_vertices(tree, experiment)
+    else :
+        print("Unknown display kind, please choose between 'simple', 'immersive' or 'all vertices'.")
+        exit(1)
 
 

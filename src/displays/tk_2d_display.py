@@ -25,8 +25,6 @@ def tk_2d_display(events_dict, event_indices, experiment):
     zMax = DETECTOR_GEOM[experiment]['height']/2
     zMin = -DETECTOR_GEOM[experiment]['height']/2
 
-    print(cylinder_radius, zMax, zMin)
-
     # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
     if experiment == 'WCTE' : 
       PMT_radius -= 2
