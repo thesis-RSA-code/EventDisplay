@@ -60,6 +60,7 @@ python3 3D_display.py -h
 
 The program `showering_display.py` also shows a 3D view of the event inside the detector using pyvista. However, it is meant to display the tracks of the particles that were tracked in the WCSim simulation. The input root file has to be the output of `WCSimRoot_to_root_all_tracks`. The program also includes checkbox widgets to only display particles which were created by specific processes (pair annihilation, Bremsstrahlung, photon conversion etc...).
 
+![image](https://github.com/user-attachments/assets/690c374d-363b-450d-8add-036d43b55562)
 
 # TO DO
 
