@@ -9,7 +9,7 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Custom imports
-from utils.global_viz_utils import rescale_color, compute_PMT_marker_size, update_marker_size, rescale_color_inv
+from utils.global_viz_utils import rescale_color, rescale_color_inv, scatter
 from utils.detector_geometries import DETECTOR_GEOM
 
 
@@ -46,7 +46,10 @@ def plt_only_display(
 
   print('Making the figure...')
 
-  fig, ax = plt.subplots(figsize = (6,6))
+  #plt.rcParams['figure.dpi'] = 1000
+
+  fig, ax = plt.subplots(figsize = (10,10))
+
 
   fig.suptitle(experiment + ' Event Display')
 
@@ -55,7 +58,7 @@ def plt_only_display(
 
   ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
   ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
-  ax.set_aspect('equal')      
+  ax.set_aspect('equal')     
   ax.set_xlabel(r'$x$ (cm)')
   ax.set_ylabel(r'$z$ (cm)')
 
@@ -69,15 +72,16 @@ def plt_only_display(
   # draw event
   c = rescale_color(events_dic[color][0])
   norm = Normalize(vmin=np.min(c), vmax=np.max(c))
-  scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, ax), c=c, cmap='plasma', norm=norm)
+
+
+  sc = scatter(events_dic['xproj'][0], events_dic['yproj'][0], ax, pmt_radius=DETECTOR_GEOM[experiment]['PMT_radius'], c=c, cmap='plasma', norm=norm)
   
-  fig.canvas.mpl_connect('draw_event', lambda event: update_marker_size(event, PMT_radius, fig, ax, scatter, len(events_dic['xproj'][0])))
 
   # nice colorbar
   divider = make_axes_locatable(ax)
   cax = divider.append_axes("right", size="5%", pad=0.05)
 
-  cbar = plt.colorbar(scatter, label=color, cax=cax)
+  cbar = plt.colorbar(sc.sc, label=color, cax=cax)
 
   ticks = np.linspace(np.min(c), np.max(c), num=4)
   tick_labels = [f"{rescale_color_inv(tick, np.median(events_dic[color][0]), np.std(events_dic[color][0])):.1f}" for tick in ticks]
@@ -94,7 +98,7 @@ def plt_only_display(
       save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + f".{plt.rcParams['savefig.format']}"
 
     print(f"Save Path: {save_path + '/' + save_file}")
-    plt.savefig(save_path + '/' + save_file, bbox_inches="tight", transparent=True)
+    plt.savefig(save_path + '/' + save_file, bbox_inches="tight", transparent=True, dpi=300)
     print('Saved!')
 
   if show : plt.show()

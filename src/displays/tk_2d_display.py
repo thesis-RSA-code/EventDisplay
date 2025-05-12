@@ -10,7 +10,7 @@ from matplotlib.collections import PatchCollection
 
 # Custom imports
 from utils.detector_geometries import DETECTOR_GEOM
-from utils.global_viz_utils import rescale_color, compute_PMT_marker_size
+from utils.global_viz_utils import rescale_color, scatter
 
 
 # plot event display with tkinter animation
@@ -120,8 +120,7 @@ def tk_2d_display(events_dict, event_indices, experiment):
 
       x_before_t, y_before_t, charge_before_t = x2D[time < tmax], y2D[time < tmax], charge[time < tmax]
       
-      scatter = ax.scatter(x_before_t, y_before_t, s = compute_PMT_marker_size(PMT_radius, ax), c=rescale_color(charge_before_t), cmap='plasma')
-      #fig.canvas.mpl_connect('draw_event', lambda event: update_marker_size(event, PMT_radius, fig, ax, scatter, len(x_before_t)))
+      sc = scatter(x_before_t, y_before_t, ax, PMT_radius, c=rescale_color(charge_before_t), cmap='plasma')
 
       canvas.draw()
 

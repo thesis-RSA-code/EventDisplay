@@ -7,6 +7,7 @@ from utils.root.load_data_from_root import load_data_from_root
 from utils.root.project_2d_from_root import project2d
 
 
+
 # To do (21/02 Erwan) : add graph support here (if graph else ...)
 def prepare_data(file_path, tree_name, experiment, events_to_display):
 
@@ -21,21 +22,41 @@ def prepare_data(file_path, tree_name, experiment, events_to_display):
   return events_dict, n_events, event_indices
 
 
-def compute_PMT_marker_size(pmt_radius, ax) : # compute the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
-  
-    M = ax.transData.get_matrix()
-    xscale = M[0,0]
-    yscale = M[1,1]
-
-    return (xscale * pmt_radius)**2
-
-
-def update_marker_size(event, PMT_radius, fig, ax, scatter, npoints) : # update the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
+class scatter(): # new scatter class to update the size of the markers when resizing the figure
     
-    new_size = compute_PMT_marker_size(PMT_radius, ax)
-    scatter.set_sizes([new_size] * npoints)
-    fig.canvas.flush_events()       # flush GUI event queue
-    fig.canvas.draw_idle() 
+    def __init__(self, x, y, ax, pmt_radius, size=1, **kwargs):
+        
+        self.n = len(x)
+        self.ax = ax
+        self.ax.figure.canvas.draw()
+        self.size_data=size
+        self.size = size
+        self.pmt_radius = pmt_radius
+
+        self.sc = ax.scatter(x,y,s=self.size,**kwargs)
+    
+        self._resize()
+        self.cid = ax.figure.canvas.mpl_connect('draw_event', self._resize)
+
+    def _resize(self, event=None):
+        
+        pmt_radius = self.pmt_radius
+        M = self.ax.transData.get_matrix()
+        xscale = M[0,0]
+        ppd=72./self.ax.figure.dpi
+        s = xscale * 2 * pmt_radius * ppd
+
+        if s != self.size:
+            self.sc.set_sizes(s**2*np.ones(self.n))
+            self.size = s
+            self._redraw_later()
+    
+    def _redraw_later(self):
+        
+        self.timer = self.ax.figure.canvas.new_timer(interval=10)
+        self.timer.single_shot = True
+        self.timer.add_callback(lambda : self.ax.figure.canvas.draw_idle())
+        self.timer.start()
 
 
 def rescale_color_inv(x_r, x0, sigma) : # inverse sigmoid to get back to original color scale
