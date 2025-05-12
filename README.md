@@ -43,7 +43,8 @@ python3 event_display.py -h
 
 Enjoy !
 
-![alt text](plots/SK_readme.jpg)
+![SK_readme](https://github.com/user-attachments/assets/aa897064-af3e-4370-921d-4ed503fc7917)
+
 
 
 # 3D Display
