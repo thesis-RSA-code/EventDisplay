@@ -260,7 +260,7 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
 
-    plotter.add_text(f"Energy={energy}MeV", position='upper_edge', font_size=10, color="white")
+    plotter.add_text(f"Energy={'{:.3f}'.format(energy)}MeV", position='upper_edge', font_size=10, color="white")
     plotter.camera.view_angle = 90  # Set FOV to 90 degrees for a wide angle
 
     # Add axes labels

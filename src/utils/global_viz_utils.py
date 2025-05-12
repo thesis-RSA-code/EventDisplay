@@ -22,7 +22,7 @@ def prepare_data(file_path, tree_name, experiment, events_to_display):
   return events_dict, n_events, event_indices
 
 
-class scatter(): # new scatter class to update the size of the markers when resizing the figure
+class scatter(): # new scatter class to update the size of the markers when resizing the figure, from https://stackoverflow.com/questions/48172928/scale-matplotlib-pyplot-axes-scatter-markersize-by-x-scale/48174228#48174228
     
     def __init__(self, x, y, ax, pmt_radius, size=1, **kwargs):
         
