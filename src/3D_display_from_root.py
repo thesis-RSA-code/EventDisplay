@@ -35,7 +35,7 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
 
-    if experiment == "WCTE":
+    if experiment == "WCTE_r":
         ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_ylim(zMin-50, zMax+50)
@@ -48,9 +48,9 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
 
     PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
-    PMT_plot_size = compute_PMT_marker_size(PMT_radius, fig, ax)
+    PMT_plot_size = compute_PMT_marker_size(PMT_radius, ax)
 
-    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=PMT_plot_size, c=rescale_color(charge[event_index]), cmap='plasma')
+    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=5, c=rescale_color(charge[event_index]), cmap='plasma')
 
     if plot_vertex:
         vertex = events_root['vertex'].array()
@@ -62,7 +62,7 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
     # draw cylinder limits
     if outline:
-        if experiment == "WCTE":
+        if experiment == "WCTE_r":
             theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
             y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
             Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
@@ -130,7 +130,7 @@ def draw_all_vertices(tree, experiment) :
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
 
-    if experiment == "WCTE":
+    if experiment == "WCTE_r":
         ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_ylim(zMin-50, zMax+50)
@@ -144,7 +144,7 @@ def draw_all_vertices(tree, experiment) :
     ax.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2], c='r', marker='o', s=100)
 
     # draw cylinder
-    if experiment == "WCTE":
+    if experiment == "WCTE_r":
         theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
         y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
         Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
@@ -227,7 +227,7 @@ def immersive_display(tree, event_index, experiment) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM[experiment]['cylinder_radius'], height=DETECTOR_GEOM[experiment]['height'])
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM[experiment]['cylinder_radius']+10, height=DETECTOR_GEOM[experiment]['height']+10)
     plotter.add_mesh(cylinder, color='black')
 
     for z in [-DETECTOR_GEOM[experiment]['height'] / 2 + 10, DETECTOR_GEOM[experiment]['height']/2-10]:

@@ -43,7 +43,7 @@ python3 event_display.py -h
 
 Enjoy !
 
-![30_mu-_1000MeV_GPS_6-1](https://github.com/user-attachments/assets/0116d31e-ea78-4380-903f-adfda5be5e45)
+![alt text](plots/SK_readme.jpg)
 
 
 # 3D Display

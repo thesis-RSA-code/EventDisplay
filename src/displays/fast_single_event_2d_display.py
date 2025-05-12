@@ -87,13 +87,14 @@ def plt_only_display(
   #ax.set_axis_off()
 
   if save_path:
+
     print('Saving figure...')
 
     if not save_file:
       save_file = file_path.split('/')[-1].split('.')[0] + '_' + str(events_to_display) + f".{plt.rcParams['savefig.format']}"
 
     print(f"Save Path: {save_path + '/' + save_file}")
-    plt.savefig(save_path + '/' + save_file, bbox_inches="tight", transparent=True, dpi=300)
+    plt.savefig(save_path + '/' + save_file, bbox_inches="tight", transparent=True)
     print('Saved!')
 
   if show : plt.show()
