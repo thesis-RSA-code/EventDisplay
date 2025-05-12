@@ -20,24 +20,28 @@ def prepare_data(file_path, tree_name, experiment, events_to_display):
 
   return events_dict, n_events, event_indices
 
-def compute_PMT_marker_size(pmt_radius, fig, ax) : # compute the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
+
+def compute_PMT_marker_size(pmt_radius, ax) : # compute the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
+  
+    M = ax.transData.get_matrix()
+    xscale = M[0,0]
+    yscale = M[1,1]
+
+    return (xscale * pmt_radius)**2
+
+
+def update_marker_size(event, PMT_radius, fig, ax, scatter, npoints) : # update the size of PMT scatter markers in points^2 given the PMT radius in cm for a given figure and axes
     
-    xlim = ax.get_xlim()
-    ylim = ax.get_ylim()
-
-    dpi = fig.get_dpi()
-    fig_width, fig_height = fig.get_size_inches() * dpi
-    x_points_per_data_unit = fig_width / (xlim[1] - xlim[0])
-    y_points_per_data_unit = fig_height / (ylim[1] - ylim[0])
-
-    avg_points_per_data_unit = (x_points_per_data_unit + y_points_per_data_unit) / 2
-    sizes_in_points2 = (pmt_radius * avg_points_per_data_unit) ** 2
-
-    return sizes_in_points2
+    new_size = compute_PMT_marker_size(PMT_radius, ax)
+    scatter.set_sizes([new_size] * npoints)
+    fig.canvas.flush_events()       # flush GUI event queue
+    fig.canvas.draw_idle() 
 
 
 def rescale_color_inv(x_r, x0, sigma) : # inverse sigmoid to get back to original color scale
+  
     return x0 + sigma * np.log(x_r/(1-x_r)) 
+
 
 def rescale_color(x) : # rescale colors with sigmoid to have better color range
   if len(x) > 1 :

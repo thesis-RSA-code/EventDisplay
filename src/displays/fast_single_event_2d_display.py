@@ -9,7 +9,7 @@ from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Custom imports
-from utils.global_viz_utils import rescale_color, compute_PMT_marker_size, rescale_color_inv
+from utils.global_viz_utils import rescale_color, compute_PMT_marker_size, update_marker_size, rescale_color_inv
 from utils.detector_geometries import DETECTOR_GEOM
 
 
@@ -69,8 +69,10 @@ def plt_only_display(
   # draw event
   c = rescale_color(events_dic[color][0])
   norm = Normalize(vmin=np.min(c), vmax=np.max(c))
-  scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, fig, ax), c=c, cmap='plasma', norm=norm)
+  scatter = ax.scatter(events_dic['xproj'][0], events_dic['yproj'][0], s=compute_PMT_marker_size(PMT_radius, ax), c=c, cmap='plasma', norm=norm)
   
+  fig.canvas.mpl_connect('draw_event', lambda event: update_marker_size(event, PMT_radius, fig, ax, scatter, len(events_dic['xproj'][0])))
+
   # nice colorbar
   divider = make_axes_locatable(ax)
   cax = divider.append_axes("right", size="5%", pad=0.05)
