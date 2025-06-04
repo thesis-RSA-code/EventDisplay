@@ -59,7 +59,7 @@ def events_index_bounds(events_to_display, n_events):
 
 
 
-def load_data_from_root(file_path, tree_name, events_to_display):
+def load_data_from_root(file_path, tree_name, events_to_display, data_keys, extra_data_keys, extra_data_units, rotate=False, showering=False):
   """
   Load data from a ROOT file using uproot and project to 2D.
 
@@ -72,10 +72,6 @@ def load_data_from_root(file_path, tree_name, events_to_display):
   with up.open(file_path) as file:
     tree = file[tree_name]
     n_events = tree.num_entries
-      
-    data_keys = ['hitx', 'hity', 'hitz', 'charge', 'time']
-    extra_data_keys = ['energy'] + [var for var in ('dwall', 'towall') if var in tree.keys()] + ['n_hits']
-    extra_data_units = ['MeV'] + ['cm' for var in ('dwall', 'towall') if var in tree.keys()] + ['']
 
     all_keys = data_keys + extra_data_keys
 
@@ -98,12 +94,16 @@ def load_data_from_root(file_path, tree_name, events_to_display):
       all_data = ak.Array(temp_data_list)
         
   events_dict = {k: all_data[k] for k in data_keys}
+
+  if rotate:
+    events_dict = rotate_data(events_dict, showering=showering)
+
   events_dict['add_info'] = []
   
   for key, unit in zip(extra_data_keys, extra_data_units):
     #nice_litteral = {'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': }
 
-    litteral = {'label': key, 'unit': unit, 'values': np.round(all_data[key],2)}
+    litteral = {'label': key, 'unit': unit, 'values': all_data[key]}
 
     events_dict['add_info'].append(litteral)
 
@@ -117,3 +117,44 @@ def load_data_from_root(file_path, tree_name, events_to_display):
   # events_dict['add_info'].append(litteral)
 
   return events_dict, len(events_dict['hitx']), bounds
+
+
+
+def rotate_data(events_dict, showering=False) : # rotate all space data to accomodate for WCTE
+
+  print("WCTE rotation...")
+
+  hitx = events_dict["hitx"]
+  hity = events_dict["hity"]
+  hitz = events_dict["hitz"]
+
+  hitx_r = hitx
+  hity_r = -hitz
+  hitz_r = hity
+
+  events_dict["hitx"] = hitx_r
+  events_dict["hity"] = hity_r
+  events_dict["hitz"] = hitz_r
+
+  if showering:
+
+    particleStart = events_dict["particleStart"]
+    particleStop = events_dict["particleStop"]
+
+    # Extract components
+    x_s = particleStart[..., 0:1]
+    y_s = particleStart[..., 1:2]
+    z_s = particleStart[..., 2:3]
+
+    x_e = particleStop[..., 0:1]
+    y_e = particleStop[..., 1:2]
+    z_e = particleStop[..., 2:3]
+
+    # Apply rotation: x' = x, y' = -z, z' = y
+    particleStart_r = ak.concatenate([x_s, -z_s, y_s], axis=-1)
+    particleStop_r  = ak.concatenate([x_e, -z_e, y_e], axis=-1)
+
+    events_dict["particleStart"] = particleStart_r
+    events_dict["particleStop"] = particleStop_r
+
+  return events_dict
