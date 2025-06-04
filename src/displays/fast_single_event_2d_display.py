@@ -22,7 +22,8 @@ def plt_only_display(
   color='charge', 
   show=True, 
   save_path='', 
-  save_file=''
+  save_file='',
+  pad=30
   ):
   
   r"""
@@ -56,9 +57,12 @@ def plt_only_display(
   add_info_string = ', '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
   plt.title(add_info_string)
 
-  ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
-  ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
-  ax.set_aspect('equal')     
+  # ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
+  # ax.set_ylim(zMin-2*cylinder_radius - 10, zMax+2*cylinder_radius + 10)
+  # ax.set_aspect('equal')     
+  ax.set_xlim(-np.pi*cylinder_radius - pad, np.pi*cylinder_radius +pad)
+  ax.set_ylim(zMin-2*cylinder_radius - pad, zMax+2*cylinder_radius + pad)
+  ax.set_aspect('equal')      
   ax.set_xlabel(r'$x$ (cm)')
   ax.set_ylabel(r'$z$ (cm)')
 

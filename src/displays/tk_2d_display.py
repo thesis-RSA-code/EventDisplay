@@ -56,9 +56,15 @@ def tk_2d_display(events_dict, event_indices, experiment):
         ax.set_ylabel(r'$z$ (cm)')
 
         # draw detector
-        ax.add_patch(plt.Rectangle((-np.pi * cylinder_radius, zMin), 2 * np.pi * cylinder_radius, 2 * zMax, fill=True, color='black'))
-        ax.add_patch(plt.Circle((0, zMax + cylinder_radius), cylinder_radius, fill=True, color='black'))
-        ax.add_patch(plt.Circle((0, zMin - cylinder_radius), cylinder_radius, fill=True, color='black'))
+        # ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=True, color='black'))
+        # ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=True, color='black'))
+        # ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=True, color='black'))
+        ax.add_patch(plt.Rectangle((-np.pi*cylinder_radius, zMin), 2*np.pi*cylinder_radius, 2*zMax, fill=False))
+        ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
+        ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
+
+
+
 
         # get event
         if input == 'event_slider':

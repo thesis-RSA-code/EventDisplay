@@ -5,7 +5,10 @@ import argparse
 from displays.basic_3D_from_graph import base_display
 from displays.unfold_cylinder_3D_from_graph import unfold_v1_display
 
+from utils.detector_geometries import NORMALIZED_VALUES
 from utils.graphs.dataset_from_processed import DatasetFromProcessed
+
+import numpy as np
 
 
 def main(config, config_pos, experiment, event_index, display_mode):
@@ -15,15 +18,37 @@ def main(config, config_pos, experiment, event_index, display_mode):
     print("Loading the dataset (graph/data.pt)...\n")
     graph = DatasetFromProcessed(**config)
 
+    print(f"First graph of data.pt {graph[0]}")
+
     print("Loading the dataset (graph/data_pos.pt)...\n")
     graph_pos = DatasetFromProcessed(**config_pos)
+    print(f"First graph of data_pos.pot : {graph_pos[0]}")
 
     # --- Fetch the selected graph ---
     features = graph[event_index].x.numpy()
     edge_index = graph[event_index].edge_index.numpy()
-    pos = graph_pos[event_index].pos.numpy()
 
+    if hasattr(graph_pos[event_index], "hitx"):
+        hitx = graph_pos[event_index].hitx.numpy()
+        hity = graph_pos[event_index].hity.numpy()
+        hitz = graph_pos[event_index].hitz.numpy()
+    
+    elif hasattr(graph_pos[event_index], "pos"):
+        hitx = graph_pos[event_index].pos[:, 1].numpy()
+        hity = graph_pos[event_index].pos[:, 2].numpy()
+        hitz = graph_pos[event_index].pos[:, 3].numpy()
+    else:
+        raise ValueError("No hitx, hity, hitz or pos attribut found in the graph_pos dataset.")
+    
+    hitx = hitx * ( NORMALIZED_VALUES['hitx'][1] - NORMALIZED_VALUES['hitx'][0] ) + NORMALIZED_VALUES['hitx'][0]
+    hity = hity * ( NORMALIZED_VALUES['hity'][1] - NORMALIZED_VALUES['hity'][0] ) + NORMALIZED_VALUES['hity'][0]
+    hitz = hitz * ( NORMALIZED_VALUES['hitz'][1] - NORMALIZED_VALUES['hitz'][0] ) + NORMALIZED_VALUES['hitz'][0]
+    
+    pos = np.stack([hitx, hity, hitz], axis=0).T
+    print(pos.shape)
+    print(f"Min : {np.min(pos)}, max: {np.max(pos)}")
 
+    
     # Select the display mode
     if display_mode == "base":
         print("Using base display...")

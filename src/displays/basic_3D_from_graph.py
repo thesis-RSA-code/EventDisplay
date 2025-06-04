@@ -15,7 +15,11 @@ def base_display(experiment, features, pos, edge_indices):
 
     # Create a point cloud with color mapping
     point_cloud = pv.PolyData(pos)
-    point_cloud["features"] = rescale_color(features[:, 0])  # Use feature values for coloring
+
+    if len(features.shape) == 2:
+        features = features[:, 0]
+        
+    point_cloud["features"] = rescale_color(features)  # Use feature values for coloring
 
     # Create spheres at detector positions
     sphere = pv.Sphere(radius=DETECTOR_GEOM[experiment]['PMT_radius']-1, theta_resolution=8, phi_resolution=8)  # Adjust radius as needed

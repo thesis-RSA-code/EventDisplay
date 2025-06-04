@@ -1,13 +1,26 @@
 test.ipynb
 test.py
+
+
 __pycache__/
 plots/
+
 outputs/*
 launch_display.sh
+
+
 *.pkl
 graph_examples/
+
 root_output_4events.root
+# Mathieu
 launch
 python/
 scripts/
 temp/
+
+# Erwan
+custom_launch/*
+playground/
+*.svg
+*.png

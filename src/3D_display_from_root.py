@@ -13,9 +13,6 @@ from utils.global_viz_utils import rescale_color, load_data_from_root
 from utils.detector_geometries import DETECTOR_GEOM
 
 
-
-
-
 def simple_display(events_root, experiment, plot_vertex=False, plot_stop=False, plot_dir=False, outline=False) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order

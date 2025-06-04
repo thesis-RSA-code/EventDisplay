@@ -13,6 +13,17 @@ DETECTOR_GEOM = {
   'DEMO': {'height': 558.92 * 2 , 'cylinder_radius': 558.92, 'PMT_radius': 25.4}
 }
 
+# 'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 
+# 'HK_realistic': {'height': 6701.41, 'cylinder_radius': 3242.96, 'PMT_radius': 25.4},
+
+
+NORMALIZED_VALUES = {
+    'time': [550.0, 1900.0],
+    'charge': [0.01, 1000.],
+    'hitx': [-3242.96, 3242.96],    
+    'hity': [-3242.96, 3242.96],
+    'hitz': [-3296.47, 3296.47]
+}
 
 
 
