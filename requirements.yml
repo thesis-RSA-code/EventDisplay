@@ -1,4 +1,4 @@
-name: event_display
+name: event_display_test
 channels:
   - conda-forge
   - defaults
