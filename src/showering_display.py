@@ -8,14 +8,10 @@ import pickle as pck
 
 #np.bool = bool
 
-from utils.detector_geometries import track_style
+from utils.global_viz_utils import make_dashed_line, track_style, add_custom_legend, rescale_color
+from utils.detector_geometries import DETECTOR_GEOM
+from utils.root.load_data_from_root import load_data_from_root
 
-
-def rescale_color(x) : # rescale colors with sigmoid to have better color range
-  if len(x) > 1 :
-    return 1 / (1 + np.exp(-(x-np.median(x))/np.std(x))) # sigmoid
-    #return 1 / (1 + np.exp(-x)/np.std(x)) # sigmoid
-  return x
 
 
 def compute_tracks(trackId, parentId, particleStart, particleStop) :
@@ -34,57 +30,24 @@ def compute_tracks(trackId, parentId, particleStart, particleStop) :
     return tracks
 
 
-def load_data(root_file, tree_name, event_index, rotate=False) :
+def plot_display(data, experiment, plot_Chgamma=False) :
 
-    print("Loading event and track data...")
+    PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
+    cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
+    detector_height = DETECTOR_GEOM[experiment]['height']
 
-    event_tree = up.open(root_file)[tree_name]
+    hitx = data["hitx"][0]
+    hity = data["hity"][0]
+    hitz = data["hitz"][0]
+    charge = data["charge"][0]
 
-    # event data
-    energy = event_tree['energy'].array()[event_index]
-    hitx = event_tree['hitx'].array()[event_index]
-    hity = event_tree['hity'].array()[event_index]
-    hitz = event_tree['hitz'].array()[event_index]
-    charge = event_tree['charge'].array()[event_index]
-
-    # tracks data
-    particleStart = event_tree['particleStart'].array(library='np')[event_index]
-    particleStop = event_tree['particleStop'].array(library='np')[event_index]
-    pId = event_tree['pID'].array()[event_index]
-    trackId = event_tree['trackId'].array()[event_index]
-    parentId = event_tree['parentId'].array()[event_index]
-    flag = event_tree['flag'].array()[event_index]
-    creatorProcess = event_tree['CreatorProcess'].array()[event_index]
-
-
-    if rotate : # rotate all positions to account for WCTE rotation in WCSim
-
-        print("WCTE rotation...")
-
-        hitx_r = hitx
-        hity_r = -hitz
-        hitz_r = hity
-
-
-        particleStart_r = np.zeros(particleStart.shape)
-
-        particleStart_r[:,0] = particleStart[:,0]
-        particleStart_r[:,1] = -particleStart[:,2]
-        particleStart_r[:,2] = particleStart[:,1]
-
-        particleStop_r = np.zeros(particleStop.shape)
-
-        particleStop_r[:,0] = particleStop[:,0]
-        particleStop_r[:,1] = -particleStop[:,2]
-        particleStop_r[:,2] = particleStop[:,1]
-
-        hitx = hitx_r
-        hity = hity_r
-        hitz = hitz_r
-
-        particleStart = particleStart_r
-        particleStop = particleStop_r
-
+    trackId = data["trackId"][0]
+    pId = data["pID"][0]
+    parentId = data["parentId"][0]
+    flag = data["flag"][0]
+    particleStart = data["particleStart"][0]
+    particleStop = data["particleStop"][0]
+    creatorProcess = data["CreatorProcess"][0]
 
     # select primary particle (flag == 0 and parentId == 0)
     primaryId = trackId[(flag == 0) & (parentId == 0)][0]
@@ -105,45 +68,6 @@ def load_data(root_file, tree_name, event_index, rotate=False) :
     # Compute tracks vertices
     print("Computing tracks vertices...")
     tracks = compute_tracks(trackId, parentId, particleStart, particleStop)
-    
-    data = {
-    "energy": energy,
-    "trackId": trackId,
-    "pId": pId,
-    "particleStart": particleStart,
-    "particleStop": particleStop,
-    "tracks": tracks,
-    "creatorProcess": creatorProcess,
-    "primaryId": primaryId,
-    "gammaStart": gammaStart,
-    "gammaStop": gammaStop,
-    "gammaId": gammaId,
-    "hitx": hitx,
-    "hity": hity,
-    "hitz": hitz,
-    "charge": charge
-    }
-
-    return data
-
-
-def plot_display(data, detector_geom, plot_Chgamma=False) :
-
-    energy = data["energy"]
-    hitx = data["hitx"]
-    hity = data["hity"]
-    hitz = data["hitz"]
-    charge = data["charge"]
-
-    trackId = data["trackId"]
-    pId = data["pId"]
-    particleStart = data["particleStart"]
-    particleStop = data["particleStop"]
-    tracks = data["tracks"]
-    creatorProcess = data["creatorProcess"]
-    primaryId = data["primaryId"]
-    gammaStart = data["gammaStart"]
-    gammaStop = data["gammaStop"]
 
 
     # pyvista plot
@@ -162,10 +86,16 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
             continue
         
         vertices = tracks[str(track)].to_numpy()
-        line = pv.PolyData(vertices)
-        line.lines = np.array([[len(vertices), *range(len(vertices))]] )
 
         color, ls, alpha, lw = track_style(pId[trackId == track])
+
+        if ls == '--':
+            line = make_dashed_line(vertices, dash_length=0.3, gap_length=0.3)
+        else:
+    
+            line = pv.PolyData(vertices)
+            line.lines = np.array([[len(vertices), *range(len(vertices))]] )
+
             
         actor = plotter.add_mesh(line, color=color, line_width=lw, point_size=0.1, opacity=alpha)
 
@@ -201,9 +131,9 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         for start, stop in zip(gammaStart, gammaStop):
             #if np.dot(stop - start, particleStop[trackId == primaryId]-particleStart[trackId == primaryId]) < 0:
                 #continue
+            color, ls, alpha, lw = track_style(0)
             line = pv.Line(start, stop)
             line.lines = np.array([[2, 0, 1]])
-            color, ls, alpha, lw = track_style(0)
             plotter.add_mesh(line, color=color, line_width=lw, opacity=alpha)
 
 
@@ -215,7 +145,7 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
     point_cloud['charge'] = rescale_color(charge)
 
     # Create spheres at detector positions
-    sphere = pv.Sphere(radius=detector_geom['PMT_radius'], theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
+    sphere = pv.Sphere(radius=PMT_radius, theta_resolution=8, phi_resolution=8)  # Adjust radius as needed
     spheres = point_cloud.glyph(scale=False, geom=sphere, orient=False)
 
     plotter.add_mesh(spheres, scalars='charge', cmap='plasma')  # Light detectors
@@ -224,15 +154,19 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
     # draw detector
     print("Drawing detector...")
 
-    #cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius']-25, height=detector_geom['height']-55) # fine-tuned for WCTE
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=detector_geom['cylinder_radius'], height=detector_geom['height']) # fine-tuned for SK
+    if experiment == "WCTE" :
+        cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=cylinder_radius+5, height=detector_height+10) # fine-tuned for WCTE
+    else :
+        cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=cylinder_radius, height=detector_height) # fine-tuned for SK
+
+
 
     plotter.add_mesh(cylinder, color='black')
 
-    for z in [-detector_geom['height']/2+57/2, detector_geom['height']/2-57/2]:
+    for z in [-detector_height/2+57/2, detector_height/2-57/2]:
 
         # Parameters for the circle
-        radius = detector_geom['cylinder_radius'] - 25 # Radius of the circle
+        radius = cylinder_radius - 25 # Radius of the circle
         center = (0, 0, z)  # Center of the circle
         resolution = 100    # Number of points around the circle
 
@@ -260,7 +194,14 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
 
-    plotter.add_text(f"Energy={energy}MeV", position='upper_edge', font_size=10, color="white")
+    add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0].round(2)) + ' ' + info['unit'] for info in data['add_info']])
+
+    plotter.add_text(add_info_string, position='upper_edge', font_size=10, color="white")
+
+
+    # add custom legend
+    add_custom_legend(plotter, pId)
+
     plotter.camera.view_angle = 90  # Set FOV to 90 degrees for a wide angle
 
     # Add axes labels
@@ -273,8 +214,6 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
 
 if __name__ == "__main__":
 
-
-    detector_geom = {'SK': {'height': 3620.0, 'cylinder_radius': 3368.15/2, 'PMT_radius': 25.4}, 'HK': {'height': 6575.1, 'cylinder_radius': 6480/2, 'PMT_radius': 25.4}, 'WCTE': {'height': 338.0, 'cylinder_radius': 369.6/2, 'PMT_radius': 4.0}}
 
     parser = argparse.ArgumentParser(description="Access events root file and display showering tracks.")
 
@@ -314,9 +253,27 @@ if __name__ == "__main__":
     tree_name = args.tree
     event_index = args.index
     experiment = args.experiment
+    rotate = args.rotate
 
-    data = load_data(root_file, tree_name, event_index, rotate=args.rotate)
+    data_keys = ["hitx",
+                 "hity",
+                 "hitz",
+                 "charge",
+                 "time",  
+                 "trackId",
+                 "pID",
+                 "parentId",
+                 "flag",
+                 "particleStart",
+                 "particleStop",
+                 "CreatorProcess"]
+    
+    extra_data_keys = ["energy"]
+    
+    extra_data_units = ["MeV"]
 
-    plot_display(data, detector_geom[experiment], plot_Chgamma=args.plot_Chgamma)
+    data, n_data, _ = load_data_from_root(root_file, tree_name, event_index, data_keys, extra_data_keys, extra_data_units, rotate, showering=True)
+    
+    plot_display(data, experiment, plot_Chgamma=args.plot_Chgamma)
 
 

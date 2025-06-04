@@ -18,10 +18,10 @@ from utils.detector_geometries import DETECTOR_GEOM
 #os.environ["XDG_SESSION_TYPE"] = "xcb" # to avoid error with tkinter on some systems
 
 
-def main(tk, file_path, tree_name, experiment, events_to_display='all', color='charge', show=True, save_path='', save_file='') : 
+def main(tk, file_path, tree_name, experiment, events_to_display='all', extra_data_keys=[], extra_data_units=[], color='charge', show=True, save_path='', save_file='') : 
 
   # Fetch the data
-  events_dict, n_events, event_indices = prepare_data(file_path, tree_name, experiment, events_to_display)
+  events_dict, n_events, event_indices = prepare_data(file_path, tree_name, experiment, events_to_display, extra_data_keys, extra_data_units)
 
   # main function to display events
   if tk:
@@ -56,10 +56,17 @@ if __name__ == "__main__":
       help="Name of the TTree inside the root file (default: 'root_event')."
   )
   parser.add_argument(
+        "-ed", "--extra_data", type=str, nargs='*', default=[],
+        help="Extra data keys to be loaded from the root file. Provide as space-separated values."
+  )
+  parser.add_argument(
+        "-eu", "--extra_data_units", type=str, nargs='*', default=[],
+        help="Units for the extra data keys. Provide as space-separated values. Must match the order and lenghts of extra_data."
+  )
+  parser.add_argument(
       "-tk", "--tkinter_GUI", action="store_true",
       help="Use tkinter GUI to display events."
   )
-
   parser.add_argument(
       "-c", "--color", type=str, default="charge", choices=["charge", "time"],
       help="Color scheme for the single event event display: 'charge' or 'time'."
@@ -114,12 +121,23 @@ if __name__ == "__main__":
   # Check if using tk-based display
   tk_display = args.tkinter_GUI or isinstance(events_to_display, (tuple, list)) or events_to_display == 'all'
 
+  extra_data_keys = args.extra_data
+  extra_data_units = args.extra_data_units
+
+  print(f"Extra data keys: {extra_data_keys}")
+
+  if len(extra_data_keys) != len(extra_data_units):
+      print("Error: The number of extra data keys must match the number of extra data units.")
+      sys.exit(1)
+
   main(
     tk_display,
     args.file,
     args.tree, 
     args.experiment,
     events_to_display=events_to_display,
+    extra_data_keys=extra_data_keys,
+    extra_data_units=extra_data_units,
     color=args.color, 
     show=args.show, 
     save_path=args.save_path, 

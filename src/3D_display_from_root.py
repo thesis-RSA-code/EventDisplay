@@ -9,23 +9,23 @@ import matplotlib.pyplot as plt
 
 
 
-from utils.global_viz_utils import rescale_color, compute_PMT_marker_size
+from utils.global_viz_utils import rescale_color, load_data_from_root
 from utils.detector_geometries import DETECTOR_GEOM
 
 
 
 
 
-def simple_display(events_root, event_index, experiment, plot_vertex=False, plot_dir=False, outline=False) : 
+def simple_display(events_root, experiment, plot_vertex=False, plot_stop=False, plot_dir=False, outline=False) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order
     """  
     print('================================ Simple 3D display ===================================')
 
-    hitx = events_root['hitx'].array()
-    hity = events_root['hity'].array()
-    hitz = events_root['hitz'].array()
-    charge = events_root['charge'].array()
+    hitx = events_root['hitx'][0]
+    hity = events_root['hity'][0]
+    hitz = events_root['hitz'][0]
+    charge = events_root['charge'][0]
 
     cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
     zMax = DETECTOR_GEOM[experiment]['height']/2
@@ -35,7 +35,7 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
 
-    if experiment == "WCTE":
+    if experiment == "WCTE_r":
         ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
         ax.set_ylim(zMin-50, zMax+50)
@@ -48,20 +48,128 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
 
     PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
-    PMT_plot_size = compute_PMT_marker_size(PMT_radius, fig, ax)
+    #PMT_plot_size = compute_PMT_marker_size(PMT_radius, ax)
 
-    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=PMT_plot_size, c=rescale_color(charge[event_index]), cmap='plasma')
+    ax.scatter(hitx, hity, hitz, s=5, c=rescale_color(charge), cmap='plasma')
 
     if plot_vertex:
-        vertex = events_root['vertex'].array()
-        ax.scatter(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], c='r', marker='o', s=100)
+        vertex = events_root['vertex'][0]
+        ax.scatter(vertex[0], vertex[1], vertex[2], c='r', marker='o', s=100)
+
+    if plot_stop:
+        stop = events_root['particleStop'][0]
+        ax.scatter(stop[0], stop[1], stop[2], c='g', marker='x', s=100)
 
     if plot_dir:
-        direction = events_root['particleDir'].array()
-        ax.quiver(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], direction[event_index][0], direction[event_index][1], direction[event_index][2], length=100, normalize=True)
+        direction = events_root['particleDir'][0]
+        ax.quiver(vertex[0], vertex[1], vertex[2], direction[0], direction[1], direction[2], length=100, normalize=True)
+
 
     # draw cylinder limits
     if outline:
+        if experiment == "WCTE_r":
+            theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+            y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
+            Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
+
+            # Convert polar coordinates to Cartesian for plotting
+            X = cylinder_radius * np.cos(Theta)
+            Z = cylinder_radius * np.sin(Theta)
+
+
+            # Plot cylinder surface
+            ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+            # Top and bottom circular caps
+            radius = np.linspace(0, cylinder_radius, 20)
+            Theta_cap, Radius = np.meshgrid(theta, radius)
+            X_cap = Radius * np.cos(Theta_cap)
+            Z_cap = Radius * np.sin(Theta_cap)
+
+            ax.plot_surface(X_cap, np.full_like(X_cap, zMax), Z_cap, color='lightblue', alpha=0.6)
+            ax.plot_surface(X_cap, np.full_like(X_cap, zMin), Z_cap, color='lightblue', alpha=0.6)
+
+        else:
+            # Create a mesh for the cylinder
+            theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+            z = np.linspace(zMin, zMax, 20)      # Height points
+            Theta, Z = np.meshgrid(theta, z)       # Meshgrid for cylinder surface
+
+            # Convert polar coordinates to Cartesian for plotting
+            X = (cylinder_radius+5) * np.cos(Theta)
+            Y = (cylinder_radius+5) * np.sin(Theta)
+
+            # Plot cylinder surface
+            ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+            # Top and bottom circular caps
+            theta_cap = np.linspace(0, 2 * np.pi, 20)
+            x_cap = cylinder_radius * np.cos(theta_cap)
+            y_cap = cylinder_radius * np.sin(theta_cap)
+
+            ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMax), color='lightblue', alpha=0.6)
+            ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMin), color='lightblue', alpha=0.6)
+
+
+
+    ax.set_xlabel(r'$x$ (cm)')
+    ax.set_ylabel(r'$y$ (cm)')
+    ax.set_zlabel(r'$z$ (cm)')
+    ax.set_title(experiment + ' Event Display')
+
+    ax.set_aspect('equal')
+
+    plt.show()
+
+
+
+def draw_all_vertices(tree, experiment) :
+
+    vertices = tree["vertex"][0]
+
+    cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
+    zMax = DETECTOR_GEOM[experiment]['height']/2
+    zMin = -DETECTOR_GEOM[experiment]['height']/2
+
+
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111, projection='3d')
+
+    if experiment == "WCTE_r":
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(zMin-50, zMax+50)
+
+    else:
+        ax.set_xlim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_ylim(-cylinder_radius-50, cylinder_radius+50)
+        ax.set_zlim(zMin-50, zMax+50)
+
+    # draw vertices
+    ax.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2], c='r', marker='o', s=100)
+
+    # draw cylinder
+    if experiment == "WCTE_r":
+        theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
+        y = np.linspace(zMin, zMax, 20)      # Height points along Y-axis
+        Theta, Y = np.meshgrid(theta, y)       # Meshgrid for cylinder surface
+        # Convert polar coordinates to Cartesian for plotting
+        X = cylinder_radius * np.cos(Theta)
+        Z = cylinder_radius * np.sin(Theta)
+
+        # Plot cylinder surface
+        ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
+
+        # Top and bottom circular caps
+        radius = np.linspace(0, cylinder_radius, 20)
+        Theta_cap, Radius = np.meshgrid(theta, radius)
+        X_cap = Radius * np.cos(Theta_cap)
+        Z_cap = Radius * np.sin(Theta_cap)
+
+        ax.plot_surface(X_cap, np.full_like(X_cap, zMax), Z_cap, color='lightblue', alpha=0.6)
+        ax.plot_surface(X_cap, np.full_like(X_cap, zMin), Z_cap, color='lightblue', alpha=0.6)
+
+    else:
         # Create a mesh for the cylinder
         theta = np.linspace(0, 2 * np.pi, 20)  # Angular points
         z = np.linspace(zMin, zMax, 20)      # Height points
@@ -82,30 +190,26 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
         ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMax), color='lightblue', alpha=0.6)
         ax.plot_trisurf(x_cap, y_cap, np.full_like(x_cap, zMin), color='lightblue', alpha=0.6)
 
-
     ax.set_xlabel(r'$x$ (cm)')
     ax.set_ylabel(r'$y$ (cm)')
     ax.set_zlabel(r'$z$ (cm)')
-    ax.set_title(experiment + ' Event Display')
 
     ax.set_aspect('equal')
-
     plt.show()
 
 
+def immersive_display(tree, experiment, plot_vertex=False, plot_stop=False, plot_dir=False) :
 
-def immersive_display(tree, event_index, experiment) :
-
-    hitx = tree["hitx"].array()[event_index]
-    hity = tree["hity"].array()[event_index]
-    hitz = tree["hitz"].array()[event_index]
-    charge = tree["charge"].array()[event_index]
-    vertex = tree["vertex"].array()[event_index]
+    hitx = tree["hitx"][0]
+    hity = tree["hity"][0]
+    hitz = tree["hitz"][0]
+    charge = tree["charge"][0]
+    vertex = tree["vertex"][0]
 
     annotations = []
     for var in ['towall', 'dwall', 'energy']:
         if var in tree.keys():
-            value = tree[var].array()[event_index]
+            value = tree[var][0]
             annotations.append(f"{var}: {value:.3f}")
 
     # pyvista plot
@@ -128,7 +232,7 @@ def immersive_display(tree, event_index, experiment) :
     # draw detector
     print("Drawing detector...")
 
-    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM[experiment]['cylinder_radius'], height=DETECTOR_GEOM[experiment]['height'])
+    cylinder = pv.Cylinder(center=(0, 0, 0), direction=(0, 0, 1), radius=DETECTOR_GEOM[experiment]['cylinder_radius']+10, height=DETECTOR_GEOM[experiment]['height']+10)
     plotter.add_mesh(cylinder, color='black')
 
     for z in [-DETECTOR_GEOM[experiment]['height'] / 2 + 10, DETECTOR_GEOM[experiment]['height']/2-10]:
@@ -152,11 +256,31 @@ def immersive_display(tree, event_index, experiment) :
         # Plot the circle
         plotter.add_mesh(circle, color="grey", point_size=0.01, line_width=5, opacity=0.5)  # Add points
 
+    # Add vertex if requested
+    if plot_vertex:
+        print("Adding vertex...")
+        vertex = np.array(vertex)
+        vertex_sphere = pv.Sphere(radius=2, center=vertex, theta_resolution=8, phi_resolution=8)
+        plotter.add_mesh(vertex_sphere, color='red', name='Vertex')
+    # Add stop position if requested
+    if plot_stop:
+        print("Adding stop position...")
+        stop = tree["particleStop"][0]
+        stop_sphere = pv.Sphere(radius=2, center=stop, theta_resolution=8, phi_resolution=8)
+        plotter.add_mesh(stop_sphere, color='green', name='Stop Position')
+    # Add particle direction if requested
+    if plot_dir:
+        print("Adding particle direction...")
+        direction = tree["particleDir"][0]
+        start = vertex
+        end = start + direction * 50  # Scale the direction vector for visibility
+        plotter.add_lines(np.array([start, end]), color='blue', width=2, name='Particle Direction')
+
     # Set camera position
     print("Setting camera...")
 
     plotter.camera_position = [
-        vertex,   # Camera position (x, y, z)
+        (0, 0, 0),   # Camera position (x, y, z)
         (np.mean(hitx), np.mean(hity), np.mean(hitz)),   # Focal point (center of the view)
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
@@ -212,6 +336,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-s", "--stop", action="store_true",
+        help="Plot the stop position of the particle. Only for simple display."
+    )
+
+    parser.add_argument(
         "-d", "--direction", action="store_true",
         help="Plot the particule direction of the event. Only for simple display."
     )
@@ -229,13 +358,26 @@ if __name__ == "__main__":
     event_index = args.index
 
     # loading data
-    print("Loading data...")
-    file = up.open(root_file)
-    tree = file[tree_name]
+    data_keys = ["hitx",
+                 "hity",
+                 "hitz",
+                 "charge",
+                 "time",
+                 "vertex",
+                 "particleStop",
+                 "particleDir"
+                ]
+
+    data, n_data, _ = load_data_from_root(root_file, tree_name, event_index, data_keys)
 
     if args.kind == 'simple':
-        simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_dir=args.direction, outline=args.outline)
-    else : 
-        immersive_display(tree, event_index, experiment)
+        simple_display(data, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction, outline=args.outline)
+    elif args.kind == 'immersive' : 
+        immersive_display(data, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction)
+    elif args.kind == 'all vertices' :
+        draw_all_vertices(data, experiment)
+    else :
+        print("Unknown display kind, please choose between 'simple', 'immersive' or 'all vertices'.")
+        exit(1)
 
 
