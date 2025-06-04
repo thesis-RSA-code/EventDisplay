@@ -59,7 +59,7 @@ def events_index_bounds(events_to_display, n_events):
 
 
 
-def load_data_from_root(file_path, tree_name, events_to_display, data_keys, extra_data_keys, extra_data_units, rotate=False, showering=False):
+def load_data_from_root(file_path, tree_name, events_to_display, data_keys=["hitx", "hity", "hitz", "charge", "time"], extra_data_keys=[], extra_data_units=[], rotate=False, showering=False):
   """
   Load data from a ROOT file using uproot and project to 2D.
 

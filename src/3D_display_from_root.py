@@ -9,23 +9,23 @@ import matplotlib.pyplot as plt
 
 
 
-from utils.global_viz_utils import rescale_color
+from utils.global_viz_utils import rescale_color, load_data_from_root
 from utils.detector_geometries import DETECTOR_GEOM
 
 
 
 
 
-def simple_display(events_root, event_index, experiment, plot_vertex=False, plot_stop=False, plot_dir=False, outline=False) : 
+def simple_display(events_root, experiment, plot_vertex=False, plot_stop=False, plot_dir=False, outline=False) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order
     """  
     print('================================ Simple 3D display ===================================')
 
-    hitx = events_root['hitx'].array()
-    hity = events_root['hity'].array()
-    hitz = events_root['hitz'].array()
-    charge = events_root['charge'].array()
+    hitx = events_root['hitx'][0]
+    hity = events_root['hity'][0]
+    hitz = events_root['hitz'][0]
+    charge = events_root['charge'][0]
 
     cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
     zMax = DETECTOR_GEOM[experiment]['height']/2
@@ -50,19 +50,19 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
     PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
     #PMT_plot_size = compute_PMT_marker_size(PMT_radius, ax)
 
-    ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=5, c=rescale_color(charge[event_index]), cmap='plasma')
+    ax.scatter(hitx, hity, hitz, s=5, c=rescale_color(charge), cmap='plasma')
 
     if plot_vertex:
-        vertex = events_root['vertex'].array()
-        ax.scatter(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], c='r', marker='o', s=100)
+        vertex = events_root['vertex'][0]
+        ax.scatter(vertex[0], vertex[1], vertex[2], c='r', marker='o', s=100)
 
     if plot_stop:
-        stop = events_root['particleStop'].array()
-        ax.scatter(stop[event_index][0], stop[event_index][1], stop[event_index][2], c='g', marker='x', s=100)
+        stop = events_root['particleStop'][0]
+        ax.scatter(stop[0], stop[1], stop[2], c='g', marker='x', s=100)
 
     if plot_dir:
-        direction = events_root['particleDir'].array()
-        ax.quiver(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], direction[event_index][0], direction[event_index][1], direction[event_index][2], length=100, normalize=True)
+        direction = events_root['particleDir'][0]
+        ax.quiver(vertex[0], vertex[1], vertex[2], direction[0], direction[1], direction[2], length=100, normalize=True)
 
 
     # draw cylinder limits
@@ -125,7 +125,7 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
 def draw_all_vertices(tree, experiment) :
 
-    vertices = tree["vertex"].array()
+    vertices = tree["vertex"][0]
 
     cylinder_radius = DETECTOR_GEOM[experiment]['cylinder_radius']
     zMax = DETECTOR_GEOM[experiment]['height']/2
@@ -198,18 +198,18 @@ def draw_all_vertices(tree, experiment) :
     plt.show()
 
 
-def immersive_display(tree, event_index, experiment, plot_vertex=False, plot_stop=False, plot_dir=False) :
+def immersive_display(tree, experiment, plot_vertex=False, plot_stop=False, plot_dir=False) :
 
-    hitx = tree["hitx"].array()[event_index]
-    hity = tree["hity"].array()[event_index]
-    hitz = tree["hitz"].array()[event_index]
-    charge = tree["charge"].array()[event_index]
-    vertex = tree["vertex"].array()[event_index]
+    hitx = tree["hitx"][0]
+    hity = tree["hity"][0]
+    hitz = tree["hitz"][0]
+    charge = tree["charge"][0]
+    vertex = tree["vertex"][0]
 
     annotations = []
     for var in ['towall', 'dwall', 'energy']:
         if var in tree.keys():
-            value = tree[var].array()[event_index]
+            value = tree[var][0]
             annotations.append(f"{var}: {value:.3f}")
 
     # pyvista plot
@@ -265,13 +265,13 @@ def immersive_display(tree, event_index, experiment, plot_vertex=False, plot_sto
     # Add stop position if requested
     if plot_stop:
         print("Adding stop position...")
-        stop = tree["particleStop"].array()[event_index]
+        stop = tree["particleStop"][0]
         stop_sphere = pv.Sphere(radius=2, center=stop, theta_resolution=8, phi_resolution=8)
         plotter.add_mesh(stop_sphere, color='green', name='Stop Position')
     # Add particle direction if requested
     if plot_dir:
         print("Adding particle direction...")
-        direction = tree["particleDir"].array()[event_index]
+        direction = tree["particleDir"][0]
         start = vertex
         end = start + direction * 50  # Scale the direction vector for visibility
         plotter.add_lines(np.array([start, end]), color='blue', width=2, name='Particle Direction')
@@ -358,16 +358,24 @@ if __name__ == "__main__":
     event_index = args.index
 
     # loading data
-    print("Loading data...")
-    file = up.open(root_file)
-    tree = file[tree_name]
+    data_keys = ["hitx",
+                 "hity",
+                 "hitz",
+                 "charge",
+                 "time",
+                 "vertex",
+                 "particleStop",
+                 "particleDir"
+                ]
+
+    data, n_data, _ = load_data_from_root(root_file, tree_name, event_index, data_keys)
 
     if args.kind == 'simple':
-        simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction, outline=args.outline)
+        simple_display(data, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction, outline=args.outline)
     elif args.kind == 'immersive' : 
-        immersive_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction)
+        immersive_display(data, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction)
     elif args.kind == 'all vertices' :
-        draw_all_vertices(tree, experiment)
+        draw_all_vertices(data, experiment)
     else :
         print("Unknown display kind, please choose between 'simple', 'immersive' or 'all vertices'.")
         exit(1)
