@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 
 
 
-from utils.global_viz_utils import rescale_color, compute_PMT_marker_size
+from utils.global_viz_utils import rescale_color
 from utils.detector_geometries import DETECTOR_GEOM
 
 
 
 
 
-def simple_display(events_root, event_index, experiment, plot_vertex=False, plot_dir=False, outline=False) : 
+def simple_display(events_root, event_index, experiment, plot_vertex=False, plot_stop=False, plot_dir=False, outline=False) : 
     r"""
     Simple 3D plot of a given event, just to check if everything is in order
     """  
@@ -48,7 +48,7 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
 
 
     PMT_radius = DETECTOR_GEOM[experiment]['PMT_radius']
-    PMT_plot_size = compute_PMT_marker_size(PMT_radius, ax)
+    #PMT_plot_size = compute_PMT_marker_size(PMT_radius, ax)
 
     ax.scatter(hitx[event_index], hity[event_index], hitz[event_index], s=5, c=rescale_color(charge[event_index]), cmap='plasma')
 
@@ -56,9 +56,14 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
         vertex = events_root['vertex'].array()
         ax.scatter(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], c='r', marker='o', s=100)
 
+    if plot_stop:
+        stop = events_root['particleStop'].array()
+        ax.scatter(stop[event_index][0], stop[event_index][1], stop[event_index][2], c='g', marker='x', s=100)
+
     if plot_dir:
         direction = events_root['particleDir'].array()
         ax.quiver(vertex[event_index][0], vertex[event_index][1], vertex[event_index][2], direction[event_index][0], direction[event_index][1], direction[event_index][2], length=100, normalize=True)
+
 
     # draw cylinder limits
     if outline:
@@ -91,8 +96,8 @@ def simple_display(events_root, event_index, experiment, plot_vertex=False, plot
             Theta, Z = np.meshgrid(theta, z)       # Meshgrid for cylinder surface
 
             # Convert polar coordinates to Cartesian for plotting
-            X = cylinder_radius * np.cos(Theta)
-            Y = cylinder_radius * np.sin(Theta)
+            X = (cylinder_radius+5) * np.cos(Theta)
+            Y = (cylinder_radius+5) * np.sin(Theta)
 
             # Plot cylinder surface
             ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6)
@@ -193,7 +198,7 @@ def draw_all_vertices(tree, experiment) :
     plt.show()
 
 
-def immersive_display(tree, event_index, experiment) :
+def immersive_display(tree, event_index, experiment, plot_vertex=False, plot_stop=False, plot_dir=False) :
 
     hitx = tree["hitx"].array()[event_index]
     hity = tree["hity"].array()[event_index]
@@ -251,11 +256,31 @@ def immersive_display(tree, event_index, experiment) :
         # Plot the circle
         plotter.add_mesh(circle, color="grey", point_size=0.01, line_width=5, opacity=0.5)  # Add points
 
+    # Add vertex if requested
+    if plot_vertex:
+        print("Adding vertex...")
+        vertex = np.array(vertex)
+        vertex_sphere = pv.Sphere(radius=2, center=vertex, theta_resolution=8, phi_resolution=8)
+        plotter.add_mesh(vertex_sphere, color='red', name='Vertex')
+    # Add stop position if requested
+    if plot_stop:
+        print("Adding stop position...")
+        stop = tree["particleStop"].array()[event_index]
+        stop_sphere = pv.Sphere(radius=2, center=stop, theta_resolution=8, phi_resolution=8)
+        plotter.add_mesh(stop_sphere, color='green', name='Stop Position')
+    # Add particle direction if requested
+    if plot_dir:
+        print("Adding particle direction...")
+        direction = tree["particleDir"].array()[event_index]
+        start = vertex
+        end = start + direction * 50  # Scale the direction vector for visibility
+        plotter.add_lines(np.array([start, end]), color='blue', width=2, name='Particle Direction')
+
     # Set camera position
     print("Setting camera...")
 
     plotter.camera_position = [
-        vertex,   # Camera position (x, y, z)
+        (0, 0, 0),   # Camera position (x, y, z)
         (np.mean(hitx), np.mean(hity), np.mean(hitz)),   # Focal point (center of the view)
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
@@ -311,6 +336,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-s", "--stop", action="store_true",
+        help="Plot the stop position of the particle. Only for simple display."
+    )
+
+    parser.add_argument(
         "-d", "--direction", action="store_true",
         help="Plot the particule direction of the event. Only for simple display."
     )
@@ -333,9 +363,9 @@ if __name__ == "__main__":
     tree = file[tree_name]
 
     if args.kind == 'simple':
-        simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_dir=args.direction, outline=args.outline)
+        simple_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction, outline=args.outline)
     elif args.kind == 'immersive' : 
-        immersive_display(tree, event_index, experiment)
+        immersive_display(tree, event_index, experiment, plot_vertex=args.vertex, plot_stop=args.stop, plot_dir=args.direction)
     elif args.kind == 'all vertices' :
         draw_all_vertices(tree, experiment)
     else :

@@ -8,7 +8,7 @@ import pickle as pck
 
 #np.bool = bool
 
-from utils.detector_geometries import track_style
+from utils.global_viz_utils import make_dashed_line, track_style, add_custom_legend
 
 
 def rescale_color(x) : # rescale colors with sigmoid to have better color range
@@ -162,10 +162,16 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
             continue
         
         vertices = tracks[str(track)].to_numpy()
-        line = pv.PolyData(vertices)
-        line.lines = np.array([[len(vertices), *range(len(vertices))]] )
 
         color, ls, alpha, lw = track_style(pId[trackId == track])
+
+        if ls == '--':
+            line = make_dashed_line(vertices, dash_length=0.3, gap_length=0.3)
+        else:
+    
+            line = pv.PolyData(vertices)
+            line.lines = np.array([[len(vertices), *range(len(vertices))]] )
+
             
         actor = plotter.add_mesh(line, color=color, line_width=lw, point_size=0.1, opacity=alpha)
 
@@ -201,9 +207,9 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         for start, stop in zip(gammaStart, gammaStop):
             #if np.dot(stop - start, particleStop[trackId == primaryId]-particleStart[trackId == primaryId]) < 0:
                 #continue
+            color, ls, alpha, lw = track_style(0)
             line = pv.Line(start, stop)
             line.lines = np.array([[2, 0, 1]])
-            color, ls, alpha, lw = track_style(0)
             plotter.add_mesh(line, color=color, line_width=lw, opacity=alpha)
 
 
@@ -260,7 +266,13 @@ def plot_display(data, detector_geom, plot_Chgamma=False) :
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
 
+
     plotter.add_text(f"Energy={'{:.3f}'.format(energy)}MeV", position='upper_edge', font_size=10, color="white")
+
+
+    # add custom legend
+    add_custom_legend(plotter, pId)
+
     plotter.camera.view_angle = 90  # Set FOV to 90 degrees for a wide angle
 
     # Add axes labels

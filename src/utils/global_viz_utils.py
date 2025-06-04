@@ -1,5 +1,6 @@
 
 import numpy as np
+import pyvista as pv
 
 
 # Custom imports
@@ -69,3 +70,99 @@ def rescale_color(x) : # rescale colors with sigmoid to have better color range
     return 1 / (1 + np.exp(-(x-np.median(x))/np.std(x))) # sigmoid
     #return 1 / (1 + np.exp(-x)/np.std(x)) # sigmoid
   return x
+
+
+# ============================ Showering display utilities =======================================
+
+
+def make_dashed_line(vertices, dash_length=1.0, gap_length=0.5):
+    points = []
+    lines = []
+    count = 0
+
+    # Go segment by segment
+    total_len = 0.0
+    for i in range(len(vertices) - 1):
+        p0 = vertices[i]
+        p1 = vertices[i + 1]
+        seg_vec = p1 - p0
+        seg_len = np.linalg.norm(seg_vec)
+
+        if seg_len == 0:
+            continue  # skip degenerate segments
+
+        direction = seg_vec / seg_len
+        t = 0.0
+
+        # Step along the segment with dash+gap cycles
+        while t < seg_len:
+            dash_start = p0 + direction * t
+            t_end = min(t + dash_length, seg_len)
+            dash_end = p0 + direction * t_end
+            points.extend([dash_start, dash_end])
+            lines.append([2, count, count + 1])
+            count += 2
+            t += dash_length + gap_length
+
+    poly = pv.PolyData()
+    poly.points = np.array(points)
+    poly.lines = np.hstack(lines)
+    return poly
+
+
+# color, linestyle, alpha, linewidth of tracks for showering_display
+def track_style(pid):
+    match pid:
+        case 11:
+            color, ls, alpha, lw = 'blue', '-', 1, 2
+        case -11:
+            color, ls, alpha, lw = 'blue', '--', 1, 2
+        case 13:
+            color, ls, alpha, lw = 'green', '-', 1, 2
+        case -13:
+            color, ls, alpha, lw = 'green', '--', 1, 2
+        case 12:
+            color, ls, alpha, lw = 'skyblue', '-', 0.5, 1
+        case -12:
+            color, ls, alpha, lw = 'skyblue', '--', 0.5, 1
+        case 14:
+            color, ls, alpha, lw = 'mediumseagreen', '-', 0.5, 1
+        case -14:
+            color, ls, alpha, lw = 'mediumseagreen', '--', 0.5, 1
+        case 211:
+            color, ls, alpha, lw = 'red', '-', 1, 2
+        case -211:
+            color, ls, alpha, lw = 'red', '--', 1, 2
+        case 111:
+            color, ls, alpha, lw = 'purple', '-', 1, 2
+        case 2112:
+            color, ls, alpha, lw = 'navy', '-', 1, 4
+        case 2212:
+            color, ls, alpha, lw = 'darkred', '-', 1, 4
+        case 22:
+            color, ls, alpha, lw = 'orange', '-', 0.5, 0.5
+        case 0:
+            color, ls, alpha, lw = 'gold', '-', 0.15, 0.5
+        case _:
+            # Default case – you can adjust the default values as needed.
+            color, ls, alpha, lw = 'grey', '-', 1, 1
+    return color, ls, alpha, lw
+
+
+def add_custom_legend(plotter, pId):
+
+    # flavour legend
+    flavour_id  = np.unique(np.abs(pId))
+    legend_entries = [(str(int(id)), track_style(id)[0], 'rectangle') for id in flavour_id]
+
+    # particle/antiparticle legend
+    #legend_entries.append({'label': 'particle', 'color': 'black', 'face': pv.Line()})
+
+    # for pid in np.unique(np.abs(pId)):
+    #     color, ls, alpha, lw = track_style(pid)
+    #     line = pv.Line()
+    #     plotter.add_mesh(line, line_width=lw, color=color, opacity=alpha, label=str(pid))
+
+    plotter.add_legend(legend_entries, bcolor='grey', loc='upper right', size=(0.12, 0.12), border=True, background_opacity=0.5)
+
+

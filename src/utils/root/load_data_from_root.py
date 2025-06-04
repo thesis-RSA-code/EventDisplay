@@ -1,7 +1,8 @@
 
 import uproot as up
 import awkward as ak
-
+import numpy as np
+from utils.detector_geometries import DETECTOR_GEOM
 
 def events_index_bounds(events_to_display, n_events):
   """
@@ -101,7 +102,18 @@ def load_data_from_root(file_path, tree_name, events_to_display):
   
   for key, unit in zip(extra_data_keys, extra_data_units):
     #nice_litteral = {'label': r'$t_\mathrm{wall}$', 'unit': 'cm', 'values': }
-    litteral = {'label': key, 'unit': unit, 'values': all_data[key]}
+
+    litteral = {'label': key, 'unit': unit, 'values': np.round(all_data[key],2)}
+
     events_dict['add_info'].append(litteral)
+
+  # add if the event is outgoing or not
+
+  # stop_z = all_data["particleStop"][:, 2]
+  # stop_r = np.sqrt(all_data["particleStop"][:, 0] ** 2 + all_data["particleStop"][:, 1] ** 2)
+
+  # out_mask = (np.abs(stop_z) > DETECTOR_GEOM['WCTE']['height']/2) | (stop_r > DETECTOR_GEOM['WCTE']['cylinder_radius'])
+  # litteral = {'label': 'outgoing', 'unit': '', 'values': out_mask}
+  # events_dict['add_info'].append(litteral)
 
   return events_dict, len(events_dict['hitx']), bounds

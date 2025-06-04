@@ -14,25 +14,6 @@ DETECTOR_GEOM = {
 }
 
 
-# color, linestyle, alpha, linewidth of tracks for showering_display
-def track_style(pid):
-    match pid:
-        case 11:
-            color, ls, alpha, lw = 'blue', '-', 1, 2
-        case -11:
-            color, ls, alpha, lw = 'red', '-', 1, 2
-        case 13:
-            color, ls, alpha, lw = 'green', '-', 1, 2
-        case -13:
-            color, ls, alpha, lw = 'purple', '-', 1, 2
-        case 22:
-            color, ls, alpha, lw = 'orange', '--', 0.5, 0.5
-        case 0:
-            color, ls, alpha, lw = 'gold', '-', 0.05, 0.2
-        case _:
-            # Default case – you can adjust the default values as needed.
-            color, ls, alpha, lw = 'black', '-', 1, 1
-    return color, ls, alpha, lw
 
 
 

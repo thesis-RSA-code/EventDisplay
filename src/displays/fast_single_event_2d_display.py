@@ -36,7 +36,7 @@ def plt_only_display(
   zMax = DETECTOR_GEOM[experiment]['height']/2
   zMin = -DETECTOR_GEOM[experiment]['height']/2
 
-  if experiment == 'WCTE' : # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
+  if experiment == 'WCTE' or experiment == 'WCTE_r': # make WCTE subPMTs smaller than what they really are, otherwise their spherical disposition will appear cramped when projected
     PMT_radius -= 2
 
     
@@ -74,7 +74,7 @@ def plt_only_display(
   norm = Normalize(vmin=np.min(c), vmax=np.max(c))
 
 
-  sc = scatter(events_dic['xproj'][0], events_dic['yproj'][0], ax, pmt_radius=DETECTOR_GEOM[experiment]['PMT_radius'], c=c, cmap='plasma', norm=norm)
+  sc = scatter(events_dic['xproj'][0], events_dic['yproj'][0], ax, pmt_radius=PMT_radius, c=c, cmap='plasma', norm=norm)
   
 
   # nice colorbar
