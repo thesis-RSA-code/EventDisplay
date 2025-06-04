@@ -21,6 +21,7 @@ from utils.detector_geometries import DETECTOR_GEOM
 def main(tk, file_path, tree_name, experiment, events_to_display='all', extra_data_keys=[], extra_data_units=[], color='charge', show=True, save_path='', save_file='') : 
 
   # Fetch the data
+  #data_keys = ["hitx", "hity", "hitz", "charge", "time"]
   events_dict, n_events, event_indices = prepare_data(file_path, tree_name, experiment, events_to_display, extra_data_keys, extra_data_units)
 
   # main function to display events

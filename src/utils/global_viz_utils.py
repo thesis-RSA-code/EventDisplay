@@ -12,7 +12,7 @@ from utils.root.project_2d_from_root import project2d
 # To do (21/02 Erwan) : add graph support here (if graph else ...)
 def prepare_data(file_path, tree_name, experiment, events_to_display, extra_data_keys=[], extra_data_units=[]):
   
-  events_dict, n_events, event_indices = load_data_from_root(file_path, tree_name, events_to_display, extra_data_keys, extra_data_units)
+  events_dict, n_events, event_indices = load_data_from_root(file_path, tree_name, events_to_display, extra_data_keys=extra_data_keys, extra_data_units=extra_data_units)
 
   print('Computing 2D projection...')
   Xproj, Yproj = project2d(events_dict['hitx'], events_dict['hity'], events_dict['hitz'], experiment)

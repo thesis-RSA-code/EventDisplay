@@ -194,7 +194,7 @@ def plot_display(data, experiment, plot_Chgamma=False) :
         (0, 0, 1),   # View up vector (defines the "up" direction)
     ]
 
-    add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0].round(2)) + ' ' + info['unit'] for info in data['add_info']])
+    add_info_string = ', '.join([info['label'] + ' = ' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in data['add_info']])
 
     plotter.add_text(add_info_string, position='upper_edge', font_size=10, color="white")
 

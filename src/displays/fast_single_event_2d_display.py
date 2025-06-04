@@ -53,7 +53,7 @@ def plt_only_display(
 
   fig.suptitle(experiment + ' Event Display')
 
-  add_info_string = ', '.join([info['label'] + r'$ = $' + str(info['values'][0].round(2)) + ' ' + info['unit'] for info in events_dic['add_info']])
+  add_info_string = ', '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
   plt.title(add_info_string)
 
   ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
