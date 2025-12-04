@@ -59,7 +59,7 @@ def simple_display(events_root, experiment, plot_vertex=False, plot_stop=False, 
 
     if plot_dir:
         direction = events_root['particleDir'][0]
-        ax.quiver(vertex[0], vertex[1], vertex[2], direction[0], direction[1], direction[2], length=100, normalize=True)
+        ax.quiver(vertex[0], vertex[1], vertex[2], direction[0], direction[1], direction[2], length=500, normalize=True)
 
 
     # draw cylinder limits

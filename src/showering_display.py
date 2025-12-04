@@ -210,8 +210,6 @@ def plot_display(data, experiment, plot_Chgamma=False) :
     plotter.show()
 
 
-
-
 if __name__ == "__main__":
 
 

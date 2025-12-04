@@ -63,9 +63,6 @@ def tk_2d_display(events_dict, event_indices, experiment):
         ax.add_patch(plt.Circle((0, zMax+cylinder_radius), cylinder_radius, fill=False))
         ax.add_patch(plt.Circle((0, zMin-cylinder_radius), cylinder_radius, fill=False))
 
-
-
-
         # get event
         if input == 'event_slider':
             event_index = wE.get()
@@ -100,7 +97,23 @@ def tk_2d_display(events_dict, event_indices, experiment):
         else:
             event_index = 0
 
-        add_info_string = ', '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in events_dict['add_info']])
+
+        # add_info_string = ' | '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][event_index]) + ' ' + info['unit'] for info in events_dict['add_info']])
+        parts = []
+        for info in events_dict['add_info']:
+            val = info['values'][event_index]
+
+            # If val is a 0-dim (scalar), format directly; otherwise format each entry
+            if np.ndim(val) == 0:
+                formatted = f"{val:.2f}"
+            else:
+                # Flatten in case it’s multi‐dimensional
+                flat = np.ravel(val)
+                formatted = "(" + ", ".join(f"{v:.2f}" for v in flat) + ")"
+
+            parts.append(f"{info['label']}$ = ${formatted} {info['unit']}")
+
+        add_info_string = " | ".join(parts)
         plt.title(add_info_string)
 
         x2D, y2D, charge, time = events_dict['xproj'][event_index], events_dict['yproj'][event_index], events_dict['charge'][event_index], events_dict['time'][event_index]

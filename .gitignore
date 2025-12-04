@@ -20,6 +20,8 @@ scripts/
 temp/
 
 # Erwan
+npml_2025/
+doc/*
 custom_launch/*
 playground/
 *.svg

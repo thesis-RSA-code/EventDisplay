@@ -73,10 +73,11 @@ def load_data_from_root(file_path, tree_name, events_to_display, data_keys=["hit
     tree = file[tree_name]
     n_events = tree.num_entries
       
-    data_keys = ['hitx', 'hity', 'hitz', 'charge', 'time']
-    extra_data_keys = ['energy'] + [var for var in ('dwall', 'towall', 'n_hits') if var in tree.keys()]
-    extra_data_units = ['MeV'] + ['cm' for _ in ('dwall', 'towall')] + ['']
+    # data_keys = ['hitx', 'hity', 'hitz', 'charge', 'time']
+    # extra_data_keys = ['energy'] + [var for var in ('dwall', 'towall', 'n_hits') if var in tree.keys()]
+    # extra_data_units = ['MeV'] + ['cm' for _ in ('dwall', 'towall')] + ['']
 
+    # assert False
     all_keys = data_keys + extra_data_keys
 
     # Determine the selection method for uproot

@@ -19,8 +19,8 @@ def plt_only_display(
   events_dic, 
   experiment, 
   events_to_display=0, 
-  color='charge', 
   show=True, 
+  color="pmt_time",
   save_path='', 
   save_file='',
   pad=30
@@ -52,9 +52,10 @@ def plt_only_display(
   fig, ax = plt.subplots(figsize = (10,10))
 
 
-  fig.suptitle(experiment + ' Event Display')
+  fig.suptitle(experiment + ' Event Display from event_' + str(events_to_display))
 
-  add_info_string = ', '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
+  # add_info_string = ', '.join([info['label'] + r'$ = $' + "{:.2f}".format(info['values'][0]) + ' ' + info['unit'] for info in events_dic['add_info']])
+  add_info_string =  ', '.join([f"{k}={v}" for k, v in events_dic['add_info'].items()])
   plt.title(add_info_string)
 
   # ax.set_xlim(-np.pi*cylinder_radius - 10, np.pi*cylinder_radius + 10)
@@ -75,6 +76,7 @@ def plt_only_display(
 
   # draw event
   c = rescale_color(events_dic[color][0])
+  # c = rescale_color(events_dic[color])
   norm = Normalize(vmin=np.min(c), vmax=np.max(c))
 
 

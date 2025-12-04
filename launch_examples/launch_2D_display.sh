@@ -7,14 +7,15 @@
 
 event_display_folder=/path/to/EventDisplay/code
 
-root_file_path=/path/to/root/file
+# root_file_path=/path/to/root/file
+root_file_path=/home/amaterasu/work/hkfd_analysis/wcsim12.20_corrTrig_study/e-/100-1000MeV/merged_root_output_e-_folder1a1000_cutted_extra_data.root
 tree_name='pure_root_tree'
-experiment='WCTE'
+experiment='HK_realistic'
 
 
-save_path=/path/to/save/images
-save_type=jpg
-save_file=imagename
+# save_path=/path/to/save/images
+# save_type=jpg
+# save_file=imagename
 
 
 #events='all' # to display all events in the root file
