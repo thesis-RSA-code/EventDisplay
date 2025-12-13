@@ -13,10 +13,8 @@ launch_display.sh
 graph_examples/
 
 root_output_4events.root
-# Mathieu
 launch
 python/
-scripts/
 temp/
 
 # Erwan
