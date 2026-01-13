@@ -30,7 +30,6 @@ def compute_distance_matrix(
         DataFrame with PMT data (must have 'tube_id', 'x', 'y', 'z' columns)
     chunk_size : int
         Chunk size for processing (default: 1000)
-        
     Returns
     -------
     distance_matrix : np.ndarray
@@ -69,6 +68,61 @@ def compute_distance_matrix(
     return distance_matrix, tube_ids
 
 
+def compute_knn_lookup(
+    distance_matrix: np.ndarray,
+    tube_ids: np.ndarray,
+    max_distance: float = None,
+) -> np.ndarray:
+    """
+    Compute KNN lookup table: for each tube, find all other tube IDs sorted by distance.
+    
+    Parameters
+    ----------
+    distance_matrix : np.ndarray
+        Distance matrix (N x N) where N is the number of PMTs
+    tube_ids : np.ndarray
+        Array of tube_ids corresponding to matrix indices
+        
+    Returns
+    -------
+    knn_lookup : np.ndarray
+        Matrix of shape (N, N-1) containing tube IDs of all other tubes
+        Each row i contains the tube IDs of all other tubes sorted by distance
+        (closest first, excluding the tube itself)
+    max_distance : float
+        Max distance to be added in the lookup table (default: all)
+    """
+    n_pmts = len(tube_ids)
+    
+    print(f"Computing KNN lookup table for all neighbors...")
+    
+    # Initialize output matrix (N-1 neighbors for each tube, excluding self)
+    knn_lookup = np.zeros((n_pmts, n_pmts - 1), dtype=tube_ids.dtype)
+    
+    for i in range(n_pmts):
+        # Get distances from tube i to all other tubes
+        distances = distance_matrix[i, :]
+        
+        # Sort all indices by distance
+        sorted_indices = np.argsort(distances)
+        
+        # Skip the first one (self, distance=0)
+        nearest_indices = sorted_indices[1:]
+
+        # If max_distance is not None, only keep the indices up to the max_distance
+        if max_distance is not None:
+            nearest_indices = nearest_indices[distances[nearest_indices] < max_distance]
+        
+        # Map indices to tube IDs
+        knn_lookup[i, :len(nearest_indices)] = tube_ids[nearest_indices]
+        knn_lookup[i, len(nearest_indices):] = -1
+        
+        if (i + 1) % 1000 == 0 or i == 0:
+            print(f"  Processed {i+1}/{n_pmts} tubes...")
+    
+    return knn_lookup
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Compute pairwise PMT distances and save as NumPy array"
@@ -84,13 +138,20 @@ def main():
         "--output", "-o",
         type=Path,
         default=None,
-        help="Output .npy file path (default: pmt_distance_matrix.npy)"
+        help="Output folder path (default: pmt_distance_matrix.npy)"
     )
     parser.add_argument(
         "--chunk-size",
         type=int,
-        default=1000,
-        help="Chunk size for processing (default: 1000)"
+        default=5000,
+        help="Chunk size for processing (default: 5000)"
+    )
+
+    parser.add_argument(
+        "--max-distance",
+        type=float,
+        default=None,
+        help="Max distance to be added in the lookup table (default: all)"
     )
     
     args = parser.parse_args()
@@ -102,14 +163,11 @@ def main():
     
     # Set default output path
     if args.output is None:
-        args.output = args.input.parent / "pmt_distance_matrix.npy"
-    else:
-        # Ensure .npy extension
-        if args.output.suffix != '.npy':
-            args.output = args.output.with_suffix('.npy')
+        print(f"No output path specified, using default: {args.input.parent}")
+        args.output = args.input.parent
     
     # Tube IDs output path
-    tube_ids_output = args.output.with_name(args.output.stem + '_tube_ids.npy')
+    tube_ids_output = args.output / 'tube_ids.npy'
     
     print("=" * 60)
     print("Computing PMT Distance Matrix")
@@ -155,19 +213,50 @@ def main():
     print(f"Estimated file size: ~{distance_matrix.nbytes / (1024**3):.2f} GB")
     
     # Save distance matrix
-    np.save(args.output, distance_matrix)
-    print(f"✓ Saved distance matrix: {args.output}")
+    distance_matrix_output_path = args.output / 'distance_matrix.npy'
+    np.save(distance_matrix_output_path, distance_matrix)
+    print(f"✓ Saved distance matrix: {distance_matrix_output_path}")
     
     # Save tube_ids mapping
-    np.save(tube_ids_output, tube_ids)
-    print(f"✓ Saved tube IDs mapping: {tube_ids_output}")
+    tube_ids_output_path = args.output / 'tube_ids.npy'
+    np.save(tube_ids_output_path, tube_ids)
+    print(f"✓ Saved tube IDs mapping: {tube_ids_output_path}")
     
     # Get actual file sizes
-    matrix_size = args.output.stat().st_size
-    ids_size = tube_ids_output.stat().st_size
-    print(f"  Distance matrix file size: {matrix_size / (1024**3):.2f} GB")
+    matrix_size = distance_matrix_output_path.stat().st_size
+    ids_size = tube_ids_output_path.stat().st_size
+    print(f"  Distance matrix file size: {matrix_size / (1024**2):.2f} MB")
     print(f"  Tube IDs file size: {ids_size / (1024**2):.2f} MB")
     
+    # Compute and save KNN lookup table (all neighbors sorted by distance)
+    print("\n" + "=" * 60)
+    print("Computing KNN Lookup Table")
+    print("=" * 60)
+    
+    knn_lookup = compute_knn_lookup(distance_matrix, tube_ids, args.max_distance)
+    
+    # KNN lookup output path
+    knn_output_path = args.output / 'knn_lookup.npy'
+    
+    print(f"\nSaving KNN lookup table...")
+    print(f"Matrix shape: {knn_lookup.shape}")
+    print(f"Data type: {knn_lookup.dtype}")
+    print(f"Estimated file size: ~{knn_lookup.nbytes / (1024**2):.2f} MB")
+    
+    np.save(knn_output_path, knn_lookup)
+    print(f"✓ Saved KNN lookup table: {knn_output_path}")
+    
+    # Get actual file size
+    knn_size = knn_output_path.stat().st_size
+    print(f"  KNN lookup file size: {knn_size / (1024**2):.2f} MB")
+    
+    # Print sample
+    print("\n" + "=" * 60)
+    print("Sample KNN lookup (first 3 tubes, showing first 10 neighbors):")
+    print("=" * 60)
+    for i in range(min(3, len(tube_ids))):
+        print(f"Tube {tube_ids[i]}: {knn_lookup[i, :10]}")
+
     print("\n" + "=" * 60)
     print("Sample (first 5x5 submatrix):")
     print("=" * 60)
